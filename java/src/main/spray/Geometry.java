@@ -1,8 +1,8 @@
-package org.chris_martin.delaunay;
+package spray;
 
 import static java.lang.Math.*;
-import static org.chris_martin.delaunay.Geometry.Side.LEFT;
-import static org.chris_martin.delaunay.Geometry.Side.RIGHT;
+import static spray.Geometry.Side.LEFT;
+import static spray.Geometry.Side.RIGHT;
 
 public final class Geometry {
   private Geometry() {}

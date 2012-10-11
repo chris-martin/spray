@@ -1,7 +1,7 @@
-package org.chris_martin.delaunay;
+package spray;
 
-import org.chris_martin.delaunay.Geometry.Line;
-import org.chris_martin.delaunay.Geometry.Vec;
+import spray.Geometry.Line;
+import spray.Geometry.Vec;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,8 +10,8 @@ import java.util.List;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
-import static org.chris_martin.delaunay.Geometry.aToB;
-import static org.chris_martin.delaunay.Geometry.xy;
+import static spray.Geometry.aToB;
+import static spray.Geometry.xy;
 
 public class Graphics {
 

@@ -1,4 +1,4 @@
-package org.chris_martin.delaunay;
+package spray;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -17,15 +17,15 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.*;
-import org.chris_martin.delaunay.Geometry.Line;
-import org.chris_martin.delaunay.Geometry.Side;
-import org.chris_martin.delaunay.Geometry.Vec;
+import spray.Geometry.Line;
+import spray.Geometry.Side;
+import spray.Geometry.Vec;
 
 import static com.google.common.collect.Sets.newHashSet;
 import static java.util.Arrays.asList;
 import static java.util.Collections.min;
 import static java.util.Collections.unmodifiableCollection;
-import static org.chris_martin.delaunay.Geometry.*;
+import static spray.Geometry.*;
 import static org.testng.collections.Lists.newArrayList;
 import static org.testng.collections.Maps.newHashMap;
 

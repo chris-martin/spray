@@ -1,14 +1,15 @@
-package org.chris_martin.delaunay;
+package spray;
 
 import org.testng.annotations.Test;
+import spray.Geometry;
 
 import java.util.Collection;
 
 import static java.lang.Math.*;
 import static java.util.Arrays.asList;
-import static org.chris_martin.delaunay.Geometry.*;
-import static org.chris_martin.delaunay.Geometry.Side.LEFT;
-import static org.chris_martin.delaunay.Geometry.Side.RIGHT;
+import static spray.Geometry.*;
+import static spray.Geometry.Side.LEFT;
+import static spray.Geometry.Side.RIGHT;
 import static org.testng.Assert.assertEquals;
 
 public class GeometryTest {
