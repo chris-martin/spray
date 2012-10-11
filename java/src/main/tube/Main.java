@@ -1,0 +1,339 @@
+package tube;
+
+import processing.core.PApplet;
+
+import processing.opengl.*;
+import javax.media.opengl.*;
+import javax.media.opengl.glu.*;
+import java.nio.*;
+
+//*********************************************************************
+//**      3D viewer with camera control and surface picking          **
+//**              Jarek Rossignac, October 2010                      **
+//**                    (using PVectors)                             **
+//*********************************************************************
+
+public class Main extends PApplet {
+
+  public static void main(String[] args) {
+    PApplet.main(new String[]{ "tube.Main" });
+  }
+
+  GL gl;
+  GLU glu;
+// Global variables:
+
+  public void setup() {size(900, 900, OPENGL); // size(500, 500, OPENGL);
+    setColors(); sphereDetail(12); rectMode(CENTER);
+    glu= ((PGraphicsOpenGL) g).glu;  PGraphicsOpenGL pgl = (PGraphicsOpenGL) g;  gl = pgl.beginGL();  pgl.endGL();
+    initm();
+  }
+  public void draw() {  background(black);  changeViewAndFrame();
+    fill(yellow); pushMatrix(); rotateY(PI/2); rect(0,0,400,400); popMatrix(); // displays surface of model 1 to set the z-buffer for picking points Q and T and for picking the local frames 1 and 2
+    if (keyPressed&&key=='t') T.set(Pick()); // sets the target point T where the mouse points. The camera will turn toward's it when the 't' key is released
+    if (keyPressed&&key=='q') {SetFrameFromPick(Q,I,J,K); }   // sets Q to the picked surface-point and {I,J,K} to screen aligned vectors
+    // the following 2 actions set frame (1 or 2) and edit its origin as the mouse is dragged
+    if (keyPressed&&key=='1') {m=1; SetFrameFromPick(Q,I,J,K); mQ[m].set(Q); if(first[m]) {mI[m].set(I); mJ[m].set(J); mK[m].set(K); first[m]=false;} }
+    if (keyPressed&&key=='2') {m=2; SetFrameFromPick(Q,I,J,K); mQ[m].set(Q); if(first[m]) {mI[m].set(I); mJ[m].set(J); mK[m].set(K); first[m]=false;} }
+//  background(white);  // to reset the z-buffer used above for picking
+    noStroke(); show(Q,30,I,J,K); // shows local frame aligned with screen when picked ('q' pressed) using (R,G,B) lines
+    noStroke(); fill(cyan); show(T,2); // shows picked point in cyan (it is set when 't' is pressed and becomes the focus)
+    fill(red); show(mQ[1],3); fill(green); show(mQ[2],3); // shows origin of frame 1 and 2 as a small red or green ball
+    if(m==1) fill(red); else if(m==2) fill(green); else if(m==0) fill(blue); show(mQ[m],5); // shows origin of selected frame (R,G,B) for (1,2,0) as a bigger ball
+    fill(yellow); show(Q,2); // shows current point on surface. Changed when 'q' is pressed
+    noStroke(); showModel(); // shows second model (currently axes)
+//  showTube(mQ[1],mK[1],mQ[2],mK[2],10);
+    showQuads(mQ[1],mK[1],mJ[1],mQ[2],mK[2],mJ[2],20,20,20, green);
+  } // end draw
+
+  // ****************** INTERRUPTS *************************
+  public void mouseDragged() {if(keyPressed) return; a-=PI*(mouseY-pmouseY)/height; a=max(-PI/2+0.1f,a); a=min(PI/2-0.1f,a);  b+=PI*(mouseX-pmouseX)/width; } // camera rotation around T when no key is pressed
+  public void keyReleased() {if(key=='t') { L.x=T.x; L.y=T.y; L.z=T.z;  }; } // sets the new focus point to wher ethe mous points to when the mouse-button is released
+  public void keyPressed() {
+    if(key=='m') showModel=!showModel; // toggles shaded versus wireframe viewing of the first model
+    if(key==' ') {d=300; b=0; a=0; L.y=0; L.x=0; L.z=0;} // reset the view
+    if(key=='h') {mQ[m].set(Q); mI[m].set(I); mJ[m].set(J); mK[m].set(K); } // reset the current frame to be defined by the mouse position and the screen orientation
+  }
+
+  // ************************ Graphic pick utilities *******************************
+  pt T = P(); // camera target point set with mouse when pressing 't'
+  pt E = P(), L=P(); // eye and lookAt
+  pt[] mQ= new pt [3];
+  vec[] mI= new vec [3], mJ= new vec [3], mK= new vec [3]; // three local frames {Q,I,J,K}
+  int m=1; // which frame is being shown / edited
+  float d=300, b=0, a=0; // view parameters: distance, angles, q
+  Boolean showModel=true, tilt=false;
+  Boolean [] first = {true, true, true}; // track if the frame has already been set
+  pt Q=P(); vec I=V(), J=V(), K=V(); // picked surface point Q and screen aligned vectors {I,J,K} set when picked
+
+  void initm() {for(int i=0; i<3; i++) {mQ[i]=P(); mI[i]=V(); mJ[i]=V(); mK[i]=V(); }} // declares the local frames
+
+  void  changeViewAndFrame() {
+    float ca=cos(a), sa=sin(a), cb=cos(b), sb=sin(b); // viewing direction angles
+    if (keyPressed&&key=='x') {mQ[m].add(mouseX-pmouseX,I).add(pmouseY-mouseY,J); } // moves the selected frame parallel to the screen
+    if (keyPressed&&key=='z') {mQ[m].add(mouseX-pmouseX,I).add(mouseY-pmouseY,K); } // moves the selected frame on th ehorizontal plane
+    if (keyPressed&&key=='d') d-=mouseY-pmouseY;  // changes distance form the target to the viewpoint
+    if (keyPressed&&key=='a') {float a= (float)(-mouseY+pmouseY+mouseX-pmouseX)/width; mI[m].rotate(a,I,J);  mJ[m].rotate(a,I,J);  mK[m].rotate(a,I,J);} // rotates current frame parallel to the screen
+    if (keyPressed&&key=='r') { // rotates the current frames in pitch and yaw
+      float a= (float) (mouseY-pmouseY)/width; mI[m].rotate(a,J,K);  mJ[m].rotate(a,J,K);  mK[m].rotate(a,J,K);
+      float b= (float) (pmouseX-mouseX)/width; mI[m].rotate(b,I,K);  mJ[m].rotate(b,I,K);  mK[m].rotate(b,I,K);  }
+    E.set(d*cb*ca, d*sa, d*sb*ca); // sets the eye
+    camera(E.x, E.y, E.z, L.x, L.y, L.z, 0.0f, 1.0f, 0.0f); // defines the view : eye, ctr, up
+    directionalLight(250, 250, 250, -E.x, -E.y+100, -E.z); // puts a white light above and to the left of the viewer
+    //  ambientLight(100,100,0);  directionalLight(250, 250, 0, -20, 10, 5); directionalLight(100, 100, 250, 10, -20, -5); // in case you want the light to be fixed in model space
+  }
+
+
+  void SetFrameFromPick(pt Q, vec I, vec J, vec K) { // sets Q where the mouse points to and I, J, K to be aligned with the screen (I right, J up, K towards thre viewer)
+    glu= ((PGraphicsOpenGL) g).glu;  PGraphicsOpenGL pgl = (PGraphicsOpenGL) g;
+    float modelviewm[] = new float[16]; gl = pgl.beginGL(); gl.glGetFloatv(GL.GL_MODELVIEW_MATRIX, modelviewm, 0); pgl.endGL();
+    Q.set(Pick());
+    I.set(modelviewm[0],modelviewm[4],modelviewm[8]);  J.set(modelviewm[1],modelviewm[5],modelviewm[9]); K.set(modelviewm[2],modelviewm[6],modelviewm[10]);   // println(I.x+","+I.y+","+I.z);
+  }
+
+  pt Pick() {
+    ((PGraphicsOpenGL)g).beginGL();
+    int viewport[] = new int[4];
+    double[] proj=new double[16];
+    double[] model=new double[16];
+    gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
+    gl.glGetDoublev(GL.GL_PROJECTION_MATRIX,proj,0);
+    gl.glGetDoublev(GL.GL_MODELVIEW_MATRIX,model,0);
+    FloatBuffer fb=ByteBuffer.allocateDirect(4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+    gl.glReadPixels(mouseX, height-mouseY, 1, 1, GL.GL_DEPTH_COMPONENT, GL.GL_FLOAT, fb);
+    fb.rewind();
+    double[] mousePosArr=new double[4];
+    glu.gluUnProject((double)mouseX,height-(double)mouseY,(double)fb.get(0), model,0,proj,0,viewport,0,mousePosArr,0);
+    ((PGraphicsOpenGL)g).endGL();
+    return P((float)mousePosArr[0],(float)mousePosArr[1],(float)mousePosArr[2]);
+  }
+
+  // ********************** display utilities ****************************
+  void showModel() {  // sets the matrix and displays the second model (here the axes as blocks)
+    pushMatrix();
+    applyMatrix( mI[m].x,mJ[m].x,mK[m].x,mQ[m].x,
+        mI[m].y,mJ[m].y,mK[m].y,mQ[m].y,
+        mI[m].z,mJ[m].z,mK[m].z,mQ[m].z,
+        0.0f,    0.0f,    0.0f,    1.0f      );
+    showAxes(30); // replace this (showing the axes) with code for showing your second model
+    popMatrix();
+  }
+
+  void showAxes(float s) { // shows three orthogonal axes as red, green, blue blocks aligned with the local frame coordinates
+    noStroke();
+    pushMatrix();
+    pushMatrix(); fill(red);  scale(s,1,1); box(2); popMatrix();
+    pushMatrix(); fill(green);  scale(1,s,1); box(2); popMatrix();
+    pushMatrix(); fill(blue);  scale(1,1,s); box(2); popMatrix();
+    popMatrix();
+  }
+
+  int red, yellow, green, cyan, blue, magenta, dred, dyellow, dgreen, dcyan, dblue, dmagenta, white, black, orange, grey, metal, dorange, brown, dbrown;
+  void setColors() {
+    red = color(250,0,0);        dred = color(150,0,0);
+    magenta = color(250,0,250);  dmagenta = color(150,0,150);
+    blue = color(0,0,250);     dblue = color(0,0,150);
+    cyan = color(0,250,250);     dcyan = color(0,150,150);
+    green = color(0,250,0);    dgreen = color(0,150,0);
+    yellow = color(250,250,0);    dyellow = color(150,150,0);
+    orange = color(250,150,0);    dorange = color(150,50,0);
+    brown = color(150,150,0);     dbrown = color(50,50,0);
+    white = color(250,250,250); black = color(0,0,0); grey = color(100,100,100); metal = color(150,150,250);
+  }
+
+  //*********************************************************************
+//**                      3D geeomtry tools                          **
+//**              Jarek Rossignac, October 2010                      **
+//**                                                                 **
+//*********************************************************************
+
+  // ===== vector class
+  class vec { float x=0,y=0,z=0;
+    vec () {};
+    vec (float px, float py, float pz) {x = px; y = py; z = pz;};
+    vec set (float px, float py, float pz) {x = px; y = py; z = pz; return this;};
+    vec set (vec V) {x = V.x; y = V.y; z = V.z; return this;};
+    vec add(vec V) {x+=V.x; y+=V.y; z+=V.z; return this;};
+    vec add(float s, vec V) {x+=s*V.x; y+=s*V.y; z+=s*V.z; return this;};
+    vec sub(vec V) {x-=V.x; y-=V.y; z-=V.z; return this;};
+    vec mul(float f) {x*=f; y*=f; z*=f; return this;};
+    vec div(float f) {x/=f; y/=f; z/=f; return this;};
+    vec div(int f) {x/=f; y/=f; z/=f; return this;};
+    vec rev() {x=-x; y=-y; z=-z; return this;};
+    float norm() {return(sqrt(sq(x)+sq(y)+sq(z)));};
+    vec normalize() {float n=norm(); if (n>0.000001) {div(n);}; return this;};
+    vec rotate(float a, vec I, vec J) {float x=d(this,I), y=d(this,J); float c=cos(a), s=sin(a); add(x*c-x-y*s,I); add(x*s+y*c-y,J); return this; }; // Rotate by a parallel to plane (I,J)
+  } ;
+
+  // ===== make vector functions
+  vec V() {return new vec(); };                                            // make vector (x,y,z)
+  vec V(float x, float y, float z) {return new vec(x,y,z); };                                            // make vector (x,y,z)
+  vec V(vec V) {return new vec(V.x,V.y,V.z); };                                                          // make copy of vector V
+  vec A(vec A, vec B) {return new vec(A.x+B.x,A.y+B.y,A.z+B.z); };                                       // A+B
+  vec A(vec U, float s, vec V) {return V(U.x+s*V.x,U.y+s*V.y,U.z+s*V.z);};                               // U+sV
+  vec M(vec U, vec V) {return V(U.x-V.x,U.y-V.y,U.z-V.z);};                                              // U-V
+  vec V(vec A, vec B) {return new vec((A.x+B.x)/2.0f,(A.y+B.y)/2.0f,(A.z+B.z)/2.0f); }                      // (A+B)/2
+  vec V(vec A, float s, vec B) {return new vec(A.x+s*(B.x-A.x),A.y+s*(B.y-A.y),A.z+s*(B.z-A.z)); };      // (1-s)A+sB
+  vec V(vec A, vec B, vec C) {return new vec((A.x+B.x+C.x)/3.0f,(A.y+B.y+C.y)/3.0f,(A.z+B.z+C.z)/3.0f); };  // (A+B+C)/3
+  vec V(vec A, vec B, vec C, vec D) {return V(V(A,B),V(C,D)); };                                         // (A+B+C+D)/4
+  vec V(float s, vec A) {return new vec(s*A.x,s*A.y,s*A.z); };                                           // sA
+  vec V(float a, vec A, float b, vec B) {return A(V(a,A),V(b,B));}                                       // aA+bB
+  vec V(float a, vec A, float b, vec B, float c, vec C) {return A(V(a,A,b,B),V(c,C));}                   // aA+bB+cC
+  vec V(pt P, pt Q) {return new vec(Q.x-P.x,Q.y-P.y,Q.z-P.z);};                                          // PQ
+  vec U(vec V) {float n = V.norm(); if (n<0.000001) return V(0,0,0); else return V.div(n);};             // V/||V||
+  vec N(vec U, vec V) {return V( U.y*V.z-U.z*V.y, U.z*V.x-U.x*V.z, U.x*V.y-U.y*V.x); };                  // UxV cross product (normal to both)
+  vec N(pt A, pt B, pt C) {return N(V(A,B),V(A,C)); };                                                   // normal to triangle (A,B,C), not normalized (proportional to area)
+  vec B(vec U, vec V) {return U(N(N(U,V),U)); }                                                           // (UxV)xV unit normal to U in the plane UV
+
+  // ===== point class
+  class pt { float x=0,y=0,z=0;
+    pt () {};
+    pt (float px, float py, float pz) {x = px; y = py; z = pz; };
+    pt set (float px, float py, float pz) {x = px; y = py; z = pz; return this;};
+    pt set (pt P) {x = P.x; y = P.y; z = P.z; return this;};
+    pt add(pt P) {x+=P.x; y+=P.y; z+=P.z; return this;};
+    pt add(vec V) {x+=V.x; y+=V.y; z+=V.z; return this;};
+    pt add(float s, vec V) {x+=s*V.x; y+=s*V.y; z+=s*V.z; return this;};
+    pt sub(pt P) {x-=P.x; y-=P.y; z-=P.z; return this;};
+    pt mul(float f) {x*=f; y*=f; z*=f; return this;};
+    pt div(float f) {x/=f; y/=f; z/=f; return this;};
+    pt div(int f) {x/=f; y/=f; z/=f; return this;};
+  }
+
+  // ===== make point functions
+  pt P() {return new pt(); }                                             // point (x,y,z)
+  pt P(float x, float y, float z) {return new pt(x,y,z); }                                             // point (x,y,z)
+  pt P(pt A) {return new pt(A.x,A.y,A.z); }                                                            // copy of point P
+  pt P(pt A, float s, pt B) {return new pt(A.x+s*(B.x-A.x),A.y+s*(B.y-A.y),A.z+s*(B.z-A.z)); }         // A+sAB
+  pt P(pt A, pt B) {return P((A.x+B.x)/2.0f,(A.y+B.y)/2.0f,(A.z+B.z)/2.0f); }                          // (A+B)/2
+  pt P(pt A, pt B, pt C) {return new pt((A.x+B.x+C.x)/3.0f,(A.y+B.y+C.y)/3.0f,(A.z+B.z+C.z)/3.0f); }   // (A+B+C)/3
+  pt P(pt A, pt B, pt C, pt D) {return P(P(A,B),P(C,D)); }                                             // (A+B+C+D)/4
+  pt P(float s, pt A) {return new pt(s*A.x,s*A.y,s*A.z); }                                             // sA
+  pt A(pt A, pt B) {return new pt(A.x+B.x,A.y+B.y,A.z+B.z); }                                          // A+B
+  pt P(float a, pt A, float b, pt B) {return A(P(a,A),P(b,B));}                                        // aA+bB
+  pt P(float a, pt A, float b, pt B, float c, pt C) {return A(P(a,A),P(b,B,c,C));}                     // aA+bB+cC
+  pt P(float a, pt A, float b, pt B, float c, pt C, float d, pt D){return A(P(a,A,b,B),P(c,C,d,D));}   // aA+bB+cC+dD
+  pt P(pt P, vec V) {return new pt(P.x + V.x, P.y + V.y, P.z + V.z); }                                 // P+V
+  pt P(pt P, float s, vec V) {return new pt(P.x+s*V.x,P.y+s*V.y,P.z+s*V.z);}                           // P+sV
+  pt P(pt O, float x, vec I, float y, vec J) {return P(O.x+x*I.x+y*J.x,O.y+x*I.y+y*J.y,O.z+x*I.z+y*J.z);}  // O+xI+yJ
+  pt P(pt O, float x, vec I, float y, vec J, float z, vec K) {return P(O.x+x*I.x+y*J.x+z*K.x,O.y+x*I.y+y*J.y+z*K.y,O.z+x*I.z+y*J.z+z*K.z);}  // O+xI+yJ+kZ
+  void makePts(pt[] C) {for(int i=0; i<C.length; i++) C[i]=P();}
+
+
+  // ===== mouse
+  pt Mouse() {return P(mouseX,mouseY,0);};                                          // current mouse location
+  pt Pmouse() {return P(pmouseX,pmouseY,0);};
+  vec MouseDrag() {return V(mouseX-pmouseX,mouseY-pmouseY,0);};                     // vector representing recent mouse displacement
+
+  // ===== measures
+  float d(vec U, vec V) {return U.x*V.x+U.y*V.y+U.z*V.z; };                                            //U*V dot product
+  float m(vec U, vec V, vec W) {return d(U,N(V,W)); };                                                 // (UxV)*W  mixed product, determinant
+  float m(pt E, pt A, pt B, pt C) {return m(V(E,A),V(E,B),V(E,C));}                                    // det (EA EB EC) is >0 when E sees (A,B,C) clockwise
+  float n2(vec V) {return sq(V.x)+sq(V.y)+sq(V.z);};                                                   // V*V    norm squared
+  float n(vec V) {return sqrt(n2(V));};                                                                // ||V||  norm
+  float d(pt P, pt Q) {return sqrt(sq(Q.x-P.x)+sq(Q.y-P.y)+sq(Q.z-P.z)); };                            // ||AB|| distance
+  float area(pt A, pt B, pt C) {return n(N(A,B,C))/2; };                                               // area of triangle
+  float volume(pt A, pt B, pt C, pt D) {return m(V(A,B),V(A,C),V(A,D))/6; };                           // volume of tet
+  boolean parallel (vec U, vec V) {return n(N(U,V))<n(U)*n(V)*0.00001; }                              // true if U and V are almost parallel
+  float angle(vec U, vec V) {return acos(d(U,V)/n(V)/n(U)); };                                       // angle(U,V)
+  boolean cw(vec U, vec V, vec W) {return m(U,V,W)>0; };                                               // (UxV)*W>0  U,V,W are clockwise
+  boolean cw(pt A, pt B, pt C, pt D) {return volume(A,B,C,D)>0; };                                     // tet is oriented so that A sees B, C, D clockwise
+
+  // ===== rotate
+  vec R(vec V) {return V(-V.y,V.x,V.z);} // rotated 90 degrees in XY plane
+  pt R(pt P, float a, vec I, vec J, pt G) {float x=d(V(G,P),I), y=d(V(G,P),J); float c=cos(a), s=sin(a); return P(P,x*c-x-y*s,I,x*s+y*c-y,J); }; // Rotated P by a around G in plane (I,J)
+  vec R(vec V, float a, vec I, vec J) {float x=d(V,I), y=d(V,J); float c=cos(a), s=sin(a); return A(V,V(x*c-x-y*s,I,x*s+y*c-y,J)); }; // Rotated V by a parallel to plane (I,J)
+
+  // ===== render
+  void normal(vec V) {normal(V.x,V.y,V.z);};                                          // changes normal for smooth shading
+  void v(pt P) {vertex(P.x,P.y,P.z);};                                           // vertex for shading or drawing
+  void vTextured(pt P, float u, float v) {vertex(P.x,P.y,P.z,u,v);};                          // vertex with texture coordinates
+  void show(pt P, pt Q) {line(Q.x,Q.y,Q.z,P.x,P.y,P.z); };                       // draws edge (P,Q)
+  void show(pt P, vec V) {line(P.x,P.y,P.z,P.x+V.x,P.y+V.y,P.z+V.z); };          // shows edge from P to P+V
+  void show(pt P, float d , vec V) {line(P.x,P.y,P.z,P.x+d*V.x,P.y+d*V.y,P.z+d*V.z); }; // shows edge from P to P+dV
+  void show(pt A, pt B, pt C) {beginShape(); v(A);v(B); v(C); endShape(CLOSE);};                      // volume of tet
+  void show(pt A, pt B, pt C, pt D) {beginShape(); v(A); v(B); v(C); v(D); endShape(CLOSE);};                      // volume of tet
+  void show(pt P, float r) {pushMatrix(); translate(P.x,P.y,P.z); sphere(r); popMatrix();}; // render sphere of radius r and center P
+  void show(pt P, float s, vec I, vec J, vec K) {noStroke(); fill(yellow); show(P,5); stroke(red); show(P,s,I); stroke(green); show(P,s,J); stroke(blue); show(P,s,K); }; // render sphere of radius r and center P
+  void show(pt P, String s) {text(s, P.x, P.y, P.z); }; // prints string s in 3D at P
+  void show(pt P, String s, vec D) {text(s, P.x+D.x, P.y+D.y, P.z+D.z);  }; // prints string s in 3D at P+D
+
+  // ==== curve
+  void bezier(pt A, pt B, pt C, pt D) {bezier(A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z,D.x,D.y,D.z);} // draws a cubic Bezier curve with control points A, B, C, D
+  void bezier(pt [] C) {bezier(C[0],C[1],C[2],C[3]);} // draws a cubic Bezier curve with control points A, B, C, D
+  pt bezierPoint(pt[] C, float t) {return P(bezierPoint(C[0].x,C[1].x,C[2].x,C[3].x,t),bezierPoint(C[0].y,C[1].y,C[2].y,C[3].y,t),bezierPoint(C[0].z,C[1].z,C[2].z,C[3].z,t)); }
+  vec bezierTangent(pt[] C, float t) {return V(bezierTangent(C[0].x,C[1].x,C[2].x,C[3].x,t),bezierTangent(C[0].y,C[1].y,C[2].y,C[3].y,t),bezierTangent(C[0].z,C[1].z,C[2].z,C[3].z,t)); }
+  void PT(pt P0, vec T0, pt P1, vec T1) {float d=d(P0,P1)/3;  bezier(P0, P(P0,-d,U(T0)), P(P1,-d,U(T1)), P1);} // draws cubic Bezier interpolating  (P0,T0) and  (P1,T1)
+  void PTtoBezier(pt P0, vec T0, pt P1, vec T1, pt [] C) {float d=d(P0,P1)/3;  C[0].set(P0); C[1].set(P(P0,-d,U(T0))); C[2].set(P(P1,-d,U(T1))); C[3].set(P1);} // draws cubic Bezier interpolating  (P0,T0) and  (P1,T1)
+  vec vecToCubic (pt A, pt B, pt C, pt D, pt E) {return V( (-A.x+4*B.x-6*C.x+4*D.x-E.x)/6, (-A.y+4*B.y-6*C.y+4*D.y-E.y)/6, (-A.z+4*B.z-6*C.z+4*D.z-E.z)/6);}
+  vec vecToProp (pt B, pt C, pt D) {float cb=d(C,B);  float cd=d(C,D); return V(C,P(B,cb/(cb+cd),D)); };
+
+  // ==== perspective
+  pt Pers(pt P, float d) { return P(d*P.x/(d+P.z) , d*P.y/(d+P.z) , d*P.z/(d+P.z) ); };
+  pt InverserPers(pt P, float d) { return P(d*P.x/(d-P.z) , d*P.y/(d-P.z) , d*P.z/(d-P.z) ); };
+
+  // ==== intersection
+  boolean intersect(pt P, pt Q, pt A, pt B, pt C, pt X)  {return intersect(P,V(P,Q),A,B,C,X); } // if (P,Q) intersects (A,B,C), return true and set X to the intersection point
+  boolean intersect(pt E, vec T, pt A, pt B, pt C, pt X) { // if ray from E along T intersects triangle (A,B,C), return true and set X to the intersection point
+    vec EA=V(E,A), EB=V(E,B), EC=V(E,C), AB=V(A,B), AC=V(A,C);
+    boolean s=cw(EA,EB,EC), sA=cw(T,EB,EC), sB=cw(EA,T,EC), sC=cw(EA,EB,T);
+    if ( (s==sA) && (s==sB) && (s==sC) ) return false;
+    float t = m(EA,AC,AB) / m(T,AC,AB);
+    X.set(P(E,t,T));
+    return true;
+  }
+  boolean rayIntersectsTriangle(pt E, vec T, pt A, pt B, pt C) { // true if ray from E with direction T hits triangle (A,B,C)
+    vec EA=V(E,A), EB=V(E,B), EC=V(E,C);
+    boolean s=cw(EA,EB,EC), sA=cw(T,EB,EC), sB=cw(EA,T,EC), sC=cw(EA,EB,T);
+    return  (s==sA) && (s==sB) && (s==sC) ;};
+  boolean edgeIntersectsTriangle(pt P, pt Q, pt A, pt B, pt C)  {
+    vec PA=V(P,A), PQ=V(P,Q), PB=V(P,B), PC=V(P,C), QA=V(Q,A), QB=V(Q,B), QC=V(Q,C);
+    boolean p=cw(PA,PB,PC), q=cw(QA,QB,QC), a=cw(PQ,PB,PC), b=cw(PA,PQ,PC), c=cw(PQ,PB,PQ);
+    return (p!=q) && (p==a) && (p==b) && (p==c);
+  }
+  float rayParameterToIntersection(pt E, vec T, pt A, pt B, pt C) {vec AE=V(A,E), AB=V(A,B), AC=V(A,C); return - m(AE,AC,AB) / m(T,AC,AB);}
+
+  float angleDraggedAround(pt G) {  // returns angle in 2D dragged by the mouse around the screen projection of G
+    pt S=P(screenX(G.x,G.y,G.z),screenY(G.x,G.y,G.z),0);
+    vec T=V(S,Pmouse()); vec U=V(S,Mouse());
+    return atan2(d(R(U),T),d(U,T));
+  }
+
+  float scaleDraggedFrom(pt G) {pt S=P(screenX(G.x,G.y,G.z),screenY(G.x,G.y,G.z),0); return d(S,Mouse())/d(S,Pmouse()); }
+
+  // TUBE
+  void showTube(pt P0, vec T0, pt P1, vec T1, int n) {
+    pt[] C = new pt[4]; makePts(C);
+    stroke(cyan); noFill(); PTtoBezier(P0,T0,P1,T1,C); bezier(C); noStroke(); // shows an interpolating Bezier curve from frame 1 to frames 2 (tangents are defined by K vectors)
+    for (float t=0; t<=1; t+=0.1) {pt B=bezierPoint(C,t); vec T=bezierTangent(C,t); stroke(magenta); show(B,0.1f,T); noStroke(); fill(brown); show(B,1); }
+  }
+
+  void showQuads(pt P0, vec T0, vec N0, pt P1, vec T1, vec N1, int n, int ne, float r, int col) {
+    pt[] G = new pt[4]; makePts(G);
+    float d=d(P0,P1)/3;  G[0].set(P(P0,d,U(T0))); G[1].set(P(P0,-d,U(T0))); G[2].set(P(P1,-d,U(T1))); G[3].set(P(P1,d,U(T1)));
+    G[0].add(r,N0);  G[1].add(r,N0);     G[2].add(r,N1);        G[3].add(r,N1);
+    pt[] C = new pt[n]; makePts(C);
+    for(int i=0; i<n; i++) C[i]=bezierPoint(G, (float) (i)/(n-1));
+    vec [] L = new vec[ne];  // displacement vectors
+    vec T = U(V(C[0],C[1]));
+    vec LL=N(V(0,0,1),T); if (n2(LL)<0.01) LL=N(V(1,0,0),T); if (n2(LL)<0.01) LL=N(V(0,1,0),T); L[0]=U(N(LL,T));
+    pt [][] P = new pt [2][ne]; makePts(P[0]); makePts(P[1]);
+    int p=0; boolean dark=true;
+    float [] c = new float [ne]; float [] s = new float [ne];
+    for (int j=0; j<ne; j++) {c[j]=r*cos(TWO_PI*j/ne); s[j]=r*sin(TWO_PI*j/ne); };
+    vec I0=U(L[0]); vec J0=U(N(L[0],T));
+    for (int j=0; j<ne; j++) P[p][j].set(P(P(C[0],C[1]),c[j],I0,s[j],J0)); p=1-p;
+    for (int i=1; i<n-1; i++) {dark=!dark;
+      vec I=U(V(C[i-1],C[i])); vec Ip=U(V(C[i],C[i+1])); vec IpmI=M(Ip,I); vec N=N(I,Ip);
+      if (n(N)<0.001) L[i]=V(L[i-1]);
+      else L[i] = A( L[i-1] , m(U(N),I,L[i-1]) , N(U(N),M(Ip,I)) );
+      I=U(L[i]);
+      vec J=U(N(I,Ip));
+      for (int j=0; j<ne; j++) P[p][j].set(P(P(C[i],C[i+1]),c[j],I,s[j],J)); p=1-p;
+      for (int j=0; j<ne; j++) {
+        if(dark) fill(200,200,200); else fill(col); dark=!dark;
+        int jp=(j+ne-1)%ne; beginShape(); v(P[p][jp]); v(P[p][j]); v(P[1-p][j]); v(P[1-p][jp]); endShape(CLOSE);};
+    }
+  }
+
+}
