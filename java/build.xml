@@ -46,23 +46,10 @@
     </javac>
   </target>
 
-  <target name="build-jar" depends="build">
-    <mkdir dir="${jar.dir}"/>
-    <jar destfile="${jar.file}" basedir="${classes.dir}">
-      <fileset dir="${src.dir}"/>
-      <zipfileset includes="**/*.class" src="lib/guava-13.0.1.jar"/>
-      <zipfileset includes="**/*.class" src="lib/testng-6.8.jar"/>
-      <manifest>
-        <attribute name="Main-Class"
-                   value="spray.Graphics"/>
-      </manifest>
-    </jar>
-  </target>
-
-  <target name="run" depends="build-jar">
-    <exec executable="java">
-      <arg line="-jar ${jar.file}"/>
-    </exec>
+  <target name="run" depends="build">
+    <java fork="true" classname="tube.Main" classpath="./build/classes:./lib/*">
+      <jvmarg value="-Djava.library.path=./lib/${os.name} ${sun.arch.data.model}"/>
+    </java>
   </target>
 
 </project>
