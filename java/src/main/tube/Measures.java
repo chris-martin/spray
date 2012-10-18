@@ -2,10 +2,8 @@ package tube;
 
 import spray.Geometry.Vec3;
 
-import static spray.Geometry.distance;
-import static tube.Vec.N;
-
 import static processing.core.PApplet.*;
+import static tube.Vec.N;
 
 public class Measures {
 
@@ -16,7 +14,7 @@ public class Measures {
 
     // (UxV)*W  mixed product, determinant
     public static float m(Vec3 U, Vec3 V, Vec3 W) {
-        return distance(U, V.cross(W));
+        return U.dot(V.cross(W));
     }
 
     // det (EA EB EC) is >0 when E sees (A,B,C) clockwise
