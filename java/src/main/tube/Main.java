@@ -321,50 +321,6 @@ public class Main extends PApplet {
   //**                                                                 **
   //*********************************************************************
 
-  // vector class
-  static class vec {
-
-    float x, y, z;
-
-    vec () {}
-    vec (float px, float py, float pz) {x = px; y = py; z = pz;}
-
-    vec set (float px, float py, float pz) {x = px; y = py; z = pz; return this;}
-    vec set (vec V) {x = V.x; y = V.y; z = V.z; return this;}
-
-    vec add(vec V) {x+=V.x; y+=V.y; z+=V.z; return this;}
-    vec add(float s, vec V) {x+=s*V.x; y+=s*V.y; z+=s*V.z; return this;}
-    vec sub(vec V) {x-=V.x; y-=V.y; z-=V.z; return this;}
-
-    vec mul(float f) {x*=f; y*=f; z*=f; return this;}
-    vec div(float f) {x/=f; y/=f; z/=f; return this;}
-    vec div(int f) {x/=f; y/=f; z/=f; return this;}
-
-    vec rev() {x=-x; y=-y; z=-z; return this;}
-
-    float norm() {
-      return(sqrt(sq(x) + sq(y) + sq(z)));
-    }
-
-    vec normalize() {
-      float n=norm();
-      if (n>0.000001) {
-        div(n);
-      }
-      return this;
-    }
-
-    // Rotate by a parallel to plane (I,J)
-    vec rotate(float a, vec I, vec J) {
-      float x=d(this,I), y=d(this,J);
-      float c=cos(a), s=sin(a);
-      add(x*c-x-y*s,I);
-      add(x*s+y*c-y,J);
-      return this;
-    }
-
-  }
-
   // ===== make vector functions
 
   // make vector (x,y,z)
