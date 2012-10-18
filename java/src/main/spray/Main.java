@@ -23,6 +23,22 @@ public class Main extends PApplet {
     GL gl;
     GLU glu;
 
+    // camera target point set with mouse when pressing 't'
+    Vec3 target = origin3();
+
+    Vec3 eye = origin3();
+
+    Vec3 lookAt = origin3();
+
+    // view distance
+    float d = 300;
+
+    // angles
+    float a, b;
+
+    // picked surface point Q and screen aligned vectors {I,J,K} set when picked
+    Vec3 Q = origin3();
+
     public void setup() {
         size(900, 500, OPENGL);
         sphereDetail(12);
@@ -38,17 +54,17 @@ public class Main extends PApplet {
         changeViewAndFrame();
 
         // displays surface of model 1 to set the z-buffer for picking points
-        // Q and T and for picking the local frames 1 and 2
+        // Q and target and for picking the local frames 1 and 2
         fill(yellow);
         pushMatrix();
         rotateY(PI / 2);
         rect(0, 0, 400, 400);
         popMatrix();
 
-        // sets the target point T where the mouse points.
+        // sets the target point target where the mouse points.
         // The camera will turn toward's it when the 't' key is released
         if (keyPressed && key == 't') {
-            T = Pick();
+            target = Pick();
         }
 
         // sets Q to the picked surface-point and {I,J,K} to screen aligned vectors
@@ -61,18 +77,16 @@ public class Main extends PApplet {
 
         // shows local frame aligned with screen when picked ('q' pressed) using (R,G,B) lines
         noStroke();
-        show(Q, 30, I, J, K);
+        show(Q, 5);
 
         // shows picked point in cyan (it is set when 't' is pressed and becomes the focus)
         noStroke();
         fill(cyan);
-        show(T, 2);
+        show(target, 2);
 
     }
 
-    // ****************** INTERRUPTS *************************
-
-    // camera rotation around T when no key is pressed
+    // camera rotation around target when no key is pressed
     public void mouseDragged() {
         if (keyPressed) {
             return;
@@ -86,44 +100,21 @@ public class Main extends PApplet {
     // sets the new focus point to wher ethe mous points to when the mouse-button is released
     public void keyReleased() {
         if (key == 't') {
-            L = T;
+            lookAt = target;
         }
     }
 
     public void keyPressed() {
-
-        // toggles shaded versus wireframe viewing of the first model
-        if (key == 'm') showModel = !showModel;
 
         // reset the view
         if (key == ' ') {
             d = 300;
             b = 0;
             a = 0;
-            L = origin3();
+            lookAt = origin3();
         }
 
     }
-
-    // ************************ Graphic pick utilities *******************************
-
-    // camera target point set with mouse when pressing 't'
-    Vec3 T = origin3();
-
-    // eye and lookAt
-    Vec3 E = origin3(), L = origin3();
-
-    // view parameters: distance, angles, q
-    float d = 300, b = 0, a = 0;
-
-    Boolean showModel = true;
-
-    // track if the frame has already been set
-    Boolean[] first = {true, true, true};
-
-    // picked surface point Q and screen aligned vectors {I,J,K} set when picked
-    Vec3 Q = origin3();
-    Vec3 I = origin3(), J = origin3(), K = origin3();
 
     void changeViewAndFrame() {
 
@@ -136,13 +127,13 @@ public class Main extends PApplet {
         }
 
         // sets the eye
-        E = xyz(d * cb * ca, d * sa, d * sb * ca);
+        eye = xyz(d * cb * ca, d * sa, d * sb * ca);
 
         // defines the view : eye, ctr, up
-        camera(E.x(), E.y(), E.z(), L.x(), L.y(), L.z(), 0.0f, 1.0f, 0.0f);
+        camera(eye.x(), eye.y(), eye.z(), lookAt.x(), lookAt.y(), lookAt.z(), 0.0f, 1.0f, 0.0f);
 
         // puts a white light above and to the left of the viewer
-        directionalLight(250, 250, 250, -E.x(), -E.y() + 100, -E.z());
+        directionalLight(250, 250, 250, -eye.x(), -eye.y() + 100, -eye.z());
 
         // in case you want the light to be fixed in model space
         // ambientLight(100,100,0);
@@ -161,9 +152,6 @@ public class Main extends PApplet {
         gl.glGetFloatv(GL.GL_MODELVIEW_MATRIX, modelviewm, 0);
         pgl.endGL();
         Q = Pick();
-        I = xyz(modelviewm[0], modelviewm[4], modelviewm[8]);
-        J = xyz(modelviewm[1], modelviewm[5], modelviewm[9]);
-        K = xyz(modelviewm[2], modelviewm[6], modelviewm[10]);
     }
 
     Vec3 Pick() {
@@ -185,39 +173,12 @@ public class Main extends PApplet {
         return xyz((float) mousePosArr[0], (float) mousePosArr[1], (float) mousePosArr[2]);
     }
 
-
-    // shows edge from P to P+dV
-    void showEdgeByPointAndOffset(Vec3 P, float d, Vec3 V) {
-        line(
-            P.x(),
-            P.y(),
-            P.z(),
-            P.x() + d * V.x(),
-            P.y() + d * V.y(),
-            P.z() + d * V.z()
-        );
-    }
-
     // render sphere of radius r and center P
     void show(Vec3 P, float r) {
         pushMatrix();
         translate(P.x(), P.y(), P.z());
         sphere(r);
         popMatrix();
-    }
-
-    // render sphere of radius r and center P
-    // Pt P, float s, Vec I, Vec J, Vec K
-    void show(Vec3 P, float s, Vec3 I, Vec3 J, Vec3 K) {
-        noStroke();
-        fill(yellow);
-        show(P, 5);
-        stroke(red);
-        showEdgeByPointAndOffset(P, s, I);
-        stroke(green);
-        showEdgeByPointAndOffset(P, s, J);
-        stroke(blue);
-        showEdgeByPointAndOffset(P, s, K);
     }
 
 }
