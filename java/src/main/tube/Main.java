@@ -3,6 +3,7 @@ package tube;
 import processing.core.PApplet;
 
 import processing.opengl.*;
+import spray.Geometry.Vec3;
 
 import javax.media.opengl.*;
 import javax.media.opengl.glu.*;
@@ -56,7 +57,7 @@ public class Main extends PApplet {
         // sets the target point T where the mouse points.
         // The camera will turn toward's it when the 't' key is released
         if (keyPressed && key == 't') {
-            T.set(Pick());
+            T = Pick().$;
         }
 
         // sets Q to the picked surface-point and {I,J,K} to screen aligned vectors
@@ -102,9 +103,9 @@ public class Main extends PApplet {
 
         // shows origin of frame 1 and 2 as a small red or green ball
         fill(red);
-        show(mQ[1], 3);
+        show(mQ[1].$, 3);
         fill(green);
-        show(mQ[2], 3);
+        show(mQ[2].$, 3);
 
         if (m == 1) {
             fill(red);
@@ -115,11 +116,11 @@ public class Main extends PApplet {
         }
 
         // shows origin of selected frame (R,G,B) for (1,2,0) as a bigger ball
-        show(mQ[m], 5);
+        show(mQ[m].$, 5);
 
         // shows current point on surface. Changed when 'q' is pressed
         fill(yellow);
-        show(Q, 2);
+        show(Q.$, 2);
 
         // shows second model (currently axes)
         noStroke();
@@ -175,7 +176,7 @@ public class Main extends PApplet {
     // ************************ Graphic pick utilities *******************************
 
     // camera target point set with mouse when pressing 't'
-    Pt T = P();
+    Vec3 T = origin3();
 
     // eye and lookAt
     Pt E = P(), L = P();
@@ -427,9 +428,9 @@ public class Main extends PApplet {
     }
 
     // render sphere of radius r and center P
-    void show(Pt P, float r) {
+    void show(Vec3 P, float r) {
         pushMatrix();
-        translate(P.$.x(), P.$.y(), P.$.z());
+        translate(P.x(), P.y(), P.z());
         sphere(r);
         popMatrix();
     }
@@ -438,7 +439,7 @@ public class Main extends PApplet {
     void show(Pt P, float s, Vec I, Vec J, Vec K) {
         noStroke();
         fill(yellow);
-        show(P, 5);
+        show(P.$, 5);
         stroke(red);
         show(P, s, I);
         stroke(green);
@@ -552,7 +553,7 @@ public class Main extends PApplet {
             show(B, 0.1f, T);
             noStroke();
             fill(brown);
-            show(B, 1);
+            show(B.$, 1);
         }
     }
 

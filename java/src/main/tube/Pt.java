@@ -30,6 +30,11 @@ public class Pt {
         return this;
     }
 
+    public Pt set(Vec3 $) {
+        this.$ = $;
+        return this;
+    }
+
     public Pt add(float s, Vec V) {
         $ = $.add(V.$.mult(s));
         return this;
