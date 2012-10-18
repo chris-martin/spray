@@ -9,6 +9,8 @@ import java.nio.*;
 
 import static tube.Pt.*;
 import static tube.Vec.*;
+import static tube.Measures.*;
+import static tube.Rotate.*;
 
 //*********************************************************************
 //**      3D viewer with camera control and surface picking          **
@@ -333,63 +335,6 @@ public class Main extends PApplet {
 
   // vector representing recent mouse displacement
   Vec MouseDrag() {return V(mouseX-pmouseX,mouseY-pmouseY,0);}
-
-  // measures
-
-  //U*V dot product
-  static float d(Vec U, Vec V) {return U.x*V.x+U.y*V.y+U.z*V.z; }
-
-  // (UxV)*W  mixed product, determinant
-  static float m(Vec U, Vec V, Vec W) {return d(U,N(V,W)); }
-
-  // det (EA EB EC) is >0 when E sees (A,B,C) clockwise
-  static float m(Pt E, Pt A, Pt B, Pt C) {return m(V(E,A),V(E,B),V(E,C));}
-
-  // V*V    norm squared
-  static float n2(Vec V) {return sq(V.x)+sq(V.y)+sq(V.z);}
-
-  // ||V||  norm
-  static float n(Vec V) {return sqrt(n2(V));}
-
-  // ||AB|| distance
-  static float d(Pt P, Pt Q) {return sqrt(sq(Q.x-P.x)+sq(Q.y-P.y)+sq(Q.z-P.z)); }
-
-  // area of triangle
-  static float area(Pt A, Pt B, Pt C) {return n(N(A,B,C))/2; }
-
-  // volume of tet
-  static float volume(Pt A, Pt B, Pt C, Pt D) {return m(V(A,B),V(A,C),V(A,D))/6; }
-
-  // true if U and V are almost parallel
-  static boolean parallel (Vec U, Vec V) {return n(N(U,V))<n(U)*n(V)*0.00001; }
-
-  // angle(U,V)
-  static float angle(Vec U, Vec V) {return acos(d(U,V)/n(V)/n(U)); }
-
-  // (UxV)*W>0  U,V,W are clockwise
-  static boolean cw(Vec U, Vec V, Vec W) {return m(U,V,W)>0; }
-
-  // tet is oriented so that A sees B, C, D clockwise
-  static boolean cw(Pt A, Pt B, Pt C, Pt D) {return volume(A,B,C,D)>0; }
-
-  // rotate
-
-  // rotated 90 degrees in XY plane
-  static Vec R(Vec V) {return V(-V.y,V.x,V.z);}
-
-  // Rotated P by a around G in plane (I,J)
-  static Pt R(Pt P, float a, Vec I, Vec J, Pt G) {
-    float x=d(V(G,P),I), y=d(V(G,P),J);
-    float c=cos(a), s=sin(a);
-    return P(P,x*c-x-y*s,I,x*s+y*c-y,J);
-  }
-
-  // Rotated V by a parallel to plane (I,J)
-  static Vec R(Vec V, float a, Vec I, Vec J) {
-    float x=d(V,I), y=d(V,J);
-    float c=cos(a), s=sin(a);
-    return A(V,V(x*c-x-y*s,I,x*s+y*c-y,J));
-  }
 
   // render
 

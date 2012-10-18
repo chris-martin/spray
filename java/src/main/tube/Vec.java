@@ -2,6 +2,8 @@ package tube;
 
 import static processing.core.PApplet.*;
 
+import static tube.Measures.*;
+
 // vector
 public class Vec {
 
@@ -93,7 +95,7 @@ public class Vec {
 
     // Rotate by a parallel to plane (I,J)
     public Vec rotate(float a, Vec I, Vec J) {
-        float x = Main.d(this, I), y = Main.d(this, J);
+        float x = d(this, I), y = d(this, J);
         float c = cos(a), s = sin(a);
         add(x * c - x - y * s, I);
         add(x * s + y * c - y, J);
