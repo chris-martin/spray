@@ -1050,7 +1050,7 @@ public final class Geometry {
     }
 
     public static Vec3 midpoint(Vec3 a, Vec3 b) {
-        return a.sub(b).div(2);
+        return a.add(b).div(2);
     }
 
 

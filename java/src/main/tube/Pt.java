@@ -20,23 +20,8 @@ public class Pt {
         $ = xyz(px, py, pz);
     }
 
-    public Pt set(float px, float py, float pz) {
-        $ = xyz(px, py, pz);
-        return this;
-    }
-
     public Pt set(Pt P) {
         $ = P.$;
-        return this;
-    }
-
-    public Pt set(Vec3 $) {
-        this.$ = $;
-        return this;
-    }
-
-    public Pt add(float s, Vec V) {
-        $ = $.add(V.$.mult(s));
         return this;
     }
 
@@ -59,21 +44,6 @@ public class Pt {
     // (A+B)/2
     static Pt P(Pt A, Pt B) {
         return new Pt(A.$.add(B.$).div(2));
-    }
-
-    // sA
-    static Pt P(float s, Pt A) {
-        return new Pt(A.$.mult(s));
-    }
-
-    // A+B
-    static Pt A(Pt A, Pt B) {
-        return new Pt(A.$.add(B.$));
-    }
-
-    // aA+bB
-    static Pt P(float a, Pt A, float b, Pt B) {
-        return A(P(a, A), P(b, B));
     }
 
     // P+sV

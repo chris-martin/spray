@@ -9,9 +9,7 @@ import javax.media.opengl.*;
 import javax.media.opengl.glu.*;
 import java.nio.*;
 
-import static spray.Geometry.distance;
-import static spray.Geometry.origin3;
-import static spray.Geometry.xyz;
+import static spray.Geometry.*;
 import static tube.Color.*;
 import static tube.Pt.*;
 import static tube.Vec.*;
@@ -368,34 +366,34 @@ public class Main extends PApplet {
     // render
 
     // changes normal for smooth shading
-    void normal(Vec V) {
-        normal(V.$.x(), V.$.y(), V.$.z());
+    void normal(Vec3 V) {
+        normal(V.x(), V.y(), V.z());
     }
 
     // vertex for shading or drawing
-    void v(Pt P) {
-        vertex(P.$.x(), P.$.y(), P.$.z());
+    void v(Vec3 P) {
+        vertex(P.x(), P.y(), P.z());
     }
 
     // vertex with texture coordinates
-    void vTextured(Pt P, float u, float v) {
-        vertex(P.$.x(), P.$.y(), P.$.z(), u, v);
+    void vTextured(Vec3 P, float u, float v) {
+        vertex(P.x(), P.y(), P.z(), u, v);
     }
 
     // draws edge (P,Q)
-    void show(Pt P, Pt Q) {
-        line(Q.$.x(), Q.$.y(), Q.$.z(), P.$.x(), P.$.y(), P.$.z());
+    void showEdgeFromPtoQ(Vec3 P, Vec3 Q) {
+        line(Q.x(), Q.y(), Q.z(), P.x(), P.y(), P.z());
     }
 
     // shows edge from P to P+V
-    void show(Pt P, Vec V) {
+    void showEdgeFromPToOffset(Vec3 P, Vec3 V) {
         line(
-            P.$.x(),
-            P.$.y(),
-            P.$.z(),
-            P.$.x() + V.$.x(),
-            P.$.y() + V.$.y(),
-            P.$.z() + V.$.z()
+            P.x(),
+            P.y(),
+            P.z(),
+            P.x() + V.x(),
+            P.y() + V.y(),
+            P.z() + V.z()
         );
     }
 
@@ -412,7 +410,7 @@ public class Main extends PApplet {
     }
 
     // volume of tet
-    void show(Pt A, Pt B, Pt C) {
+    void showTet(Vec3 A, Vec3 B, Vec3 C) {
         beginShape();
         v(A);
         v(B);
@@ -421,7 +419,7 @@ public class Main extends PApplet {
     }
 
     // volume of tet
-    void show(Pt A, Pt B, Pt C, Pt D) {
+    void showTet(Vec3 A, Vec3 B, Vec3 C, Vec3 D) {
         beginShape();
         v(A);
         v(B);
@@ -453,13 +451,13 @@ public class Main extends PApplet {
     }
 
     // prints string s in 3D at P
-    void show(Pt P, String s) {
-        text(s, P.$.x(), P.$.y(), P.$.z());
+    void showText(Vec3 P, String s) {
+        text(s, P.x(), P.y(), P.z());
     }
 
     // prints string s in 3D at P+D
-    void show(Pt P, String s, Vec D) {
-        text(s, P.$.x() + D.$.x(), P.$.y() + D.$.y(), P.$.z() + D.$.z());
+    void showText(Vec3 P, String s, Vec3 D) {
+        text(s, P.x() + D.x(), P.y() + D.y(), P.z() + D.z());
     }
 
     // curve
@@ -479,16 +477,16 @@ public class Main extends PApplet {
         bezier(C[0], C[1], C[2], C[3]);
     }
 
-    Pt bezierPoint(Vec3[] C, float t) {
-        return P(
+    Vec3 bezierPoint(Vec3[] C, float t) {
+        return xyz(
             bezierPoint(C[0].x(), C[1].x(), C[2].x(), C[3].x(), t),
             bezierPoint(C[0].y(), C[1].y(), C[2].y(), C[3].y(), t),
             bezierPoint(C[0].z(), C[1].z(), C[2].z(), C[3].z(), t)
         );
     }
 
-    Vec bezierTangent(Vec3[] C, float t) {
-        return V(
+    Vec3 bezierTangent(Vec3[] C, float t) {
+        return xyz(
             bezierTangent(C[0].x(), C[1].x(), C[2].x(), C[3].x(), t),
             bezierTangent(C[0].y(), C[1].y(), C[2].y(), C[3].y(), t),
             bezierTangent(C[0].z(), C[1].z(), C[2].z(), C[3].z(), t)
@@ -517,17 +515,17 @@ public class Main extends PApplet {
         C[3] = P1;
     }
 
-    Vec vecToCubic(Vec3 A, Vec3 B, Vec3 C, Vec3 D, Vec3 E) {
-        return V(
+    Vec3 vecToCubic(Vec3 A, Vec3 B, Vec3 C, Vec3 D, Vec3 E) {
+        return xyz(
             (-A.x() + 4 * B.x() - 6 * C.x() + 4 * D.x() - E.x()) / 6,
             (-A.y() + 4 * B.y() - 6 * C.y() + 4 * D.y() - E.y()) / 6,
             (-A.z() + 4 * B.z() - 6 * C.z() + 4 * D.z() - E.z()) / 6
         );
     }
 
-    Vec vecToProp(Pt B, Pt C, Pt D) {
+    Vec3 vecToProp(Pt B, Pt C, Pt D) {
         float cb = d(C, B), cd = d(C, D);
-        return V(C, P(B, cb / (cb + cd), D));
+        return V(C, P(B, cb / (cb + cd), D)).$;
     }
 
     // returns angle in 2D dragged by the mouse around the screen projection of G
@@ -561,13 +559,13 @@ public class Main extends PApplet {
         noStroke();
 
         for (float t = 0; t <= 1; t += 0.1) {
-            Pt B = bezierPoint(C, t);
-            Vec T = bezierTangent(C, t);
+            Vec3 B = bezierPoint(C, t);
+            Vec3 T = bezierTangent(C, t);
             stroke(magenta);
-            showEdgeByPointAndOffset(B.$, 0.1f, T.$);
+            showEdgeByPointAndOffset(B, 0.1f, T);
             noStroke();
             fill(brown);
-            show(B.$, 1);
+            show(B, 1);
         }
     }
 
@@ -582,31 +580,35 @@ public class Main extends PApplet {
         G[2] = P1.sub(T1.mag(d)).add(N1.mult(r));
         G[3] = P1.add(T1.mag(d)).add(N1.mult(r));
 
-        Pt[] C = new Pt[n];
-        makePts(C);
+        Vec3[] C = new Vec3[n];
+        for (int i = 0; i < C.length; i++) {
+            C[i] = origin3();
+        }
 
         for (int i = 0; i < n; i++) {
             C[i] = bezierPoint(G, (float) (i) / (n - 1));
         }
 
         // displacement vectors
-        Vec[] L = new Vec[ne];
+        Vec3[] L = new Vec3[ne];
 
-        Vec T = U(V(C[0], C[1]));
-        Vec LL = N(V(0, 0, 1), T);
-        if (n2(LL) < 0.01) {
-            LL = N(V(1, 0, 0), T);
+        Vec3 T = aToB(C[0], C[1]).ab().unit();
+        Vec3 LL = xyz(0, 0, 1).cross(T);
+        if (LL.magSquared() < 0.01) {
+            LL = xyz(1, 0, 0).cross(T);
         }
-        if (n2(LL) < 0.01) {
-            LL = N(V(0, 1, 0), T);
+        if (LL.magSquared() < 0.01) {
+            LL = xyz(0, 1, 0).cross(T);
         }
-        L[0] = U(N(LL, T));
+        L[0] = LL.cross(T).unit();
 
-        Pt[][] P = new Pt[2][ne];
-        makePts(P[0]);
-        makePts(P[1]);
+        Vec3[][] P = new Vec3[2][ne];
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < P[i].length; j++) {
+                P[i][j] = origin3();
+            }
+        }
 
-        int p = 0;
         boolean dark = true;
 
         float[] c = new float[ne];
@@ -617,34 +619,42 @@ public class Main extends PApplet {
             s[j] = r * sin(TWO_PI * j / ne);
         }
 
-        Vec I0 = U(L[0]);
-        Vec J0 = U(N(L[0], T));
+        Vec3 I0 = L[0].unit();
+        Vec3 J0 = L[0].cross(T).unit();
 
         for (int j = 0; j < ne; j++) {
-            P[p][j].set(P(P(C[0], C[1]), c[j], I0, s[j], J0));
+            P[0][j] = midpoint(C[0], C[1])
+                .add(I0.mult(c[j]))
+                .add(J0.mult(s[j]));
         }
 
-        p = 1 - p;
+        int p = 1;
 
         for (int i = 1; i < n - 1; i++) {
 
             dark = !dark;
 
-            Vec I = U(V(C[i - 1], C[i]));
-            Vec Ip = U(V(C[i], C[i + 1]));
-            Vec IpmI = M(Ip, I);
-            Vec N = N(I, Ip);
+            Vec3 I = aToB(C[i - 1], C[i]).ab().unit();
+            Vec3 Ip = aToB(C[i], C[i + 1]).ab().unit();
+            Vec3 IpmI = Ip.sub(I);
+            Vec3 N = I.cross(Ip);
 
-            if (n(N) < 0.001) {
-                L[i] = V(L[i - 1]);
+            if (N.mag() < 0.001) {
+                L[i] = L[i - 1];
             } else {
-                L[i] = A(L[i - 1], m(U(N).$, I.$, L[i - 1].$), N(U(N), M(Ip, I)));
+                L[i] = L[i - 1].add(
+                    N.unit().cross(IpmI).mult(
+                        m(N.unit(), I, L[i - 1])
+                    )
+                );
             }
-            I = U(L[i]);
-            Vec J = U(N(I, Ip));
+            I = L[i].unit();
+            Vec3 J = I.cross(Ip).unit();
 
             for (int j = 0; j < ne; j++) {
-                P[p][j].set(P(P(C[i], C[i + 1]), c[j], I, s[j], J));
+                P[p][j] = midpoint(C[i], C[i + 1])
+                    .add(I.mult(c[j]))
+                    .add(J.mult(s[j]));
             }
             p = 1 - p;
 
