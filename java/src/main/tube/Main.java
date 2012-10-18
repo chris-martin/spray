@@ -322,7 +322,7 @@ public class Main extends PApplet {
   //*********************************************************************
 
   // vector class
-  class vec {
+  static class vec {
 
     float x, y, z;
 
@@ -368,61 +368,61 @@ public class Main extends PApplet {
   // ===== make vector functions
 
   // make vector (x,y,z)
-  vec V() {return new vec(); }
+  static vec V() {return new vec(); }
 
   // make vector (x,y,z)
-  vec V(float x, float y, float z) {return new vec(x,y,z); }
+  static vec V(float x, float y, float z) {return new vec(x,y,z); }
 
   // make copy of vector V
-  vec V(vec V) {return new vec(V.x,V.y,V.z); }
+  static vec V(vec V) {return new vec(V.x,V.y,V.z); }
 
   // A+B
-  vec A(vec A, vec B) {return new vec(A.x+B.x,A.y+B.y,A.z+B.z); }
+  static vec A(vec A, vec B) {return new vec(A.x+B.x,A.y+B.y,A.z+B.z); }
 
   // U+sV
-  vec A(vec U, float s, vec V) {return V(U.x+s*V.x,U.y+s*V.y,U.z+s*V.z);}
+  static vec A(vec U, float s, vec V) {return V(U.x+s*V.x,U.y+s*V.y,U.z+s*V.z);}
 
   // U-V
-  vec M(vec U, vec V) {return V(U.x-V.x,U.y-V.y,U.z-V.z);}
+  static vec M(vec U, vec V) {return V(U.x-V.x,U.y-V.y,U.z-V.z);}
 
   // (A+B)/2
-  vec V(vec A, vec B) {return new vec((A.x+B.x)/2.0f,(A.y+B.y)/2.0f,(A.z+B.z)/2.0f); }
+  static vec V(vec A, vec B) {return new vec((A.x+B.x)/2.0f,(A.y+B.y)/2.0f,(A.z+B.z)/2.0f); }
 
   // (1-s)A+sB
-  vec V(vec A, float s, vec B) {return new vec(A.x+s*(B.x-A.x),A.y+s*(B.y-A.y),A.z+s*(B.z-A.z)); }
+  static vec V(vec A, float s, vec B) {return new vec(A.x+s*(B.x-A.x),A.y+s*(B.y-A.y),A.z+s*(B.z-A.z)); }
 
   // (A+B+C)/3
-  vec V(vec A, vec B, vec C) {return new vec((A.x+B.x+C.x)/3.0f,(A.y+B.y+C.y)/3.0f,(A.z+B.z+C.z)/3.0f); }
+  static vec V(vec A, vec B, vec C) {return new vec((A.x+B.x+C.x)/3.0f,(A.y+B.y+C.y)/3.0f,(A.z+B.z+C.z)/3.0f); }
 
   // (A+B+C+D)/4
-  vec V(vec A, vec B, vec C, vec D) {return V(V(A,B),V(C,D)); }
+  static vec V(vec A, vec B, vec C, vec D) {return V(V(A,B),V(C,D)); }
 
   // sA
-  vec V(float s, vec A) {return new vec(s*A.x,s*A.y,s*A.z); }
+  static vec V(float s, vec A) {return new vec(s*A.x,s*A.y,s*A.z); }
 
   // aA+bB
-  vec V(float a, vec A, float b, vec B) {return A(V(a,A),V(b,B));}
+  static vec V(float a, vec A, float b, vec B) {return A(V(a,A),V(b,B));}
 
   // aA+bB+cC
-  vec V(float a, vec A, float b, vec B, float c, vec C) {return A(V(a,A,b,B),V(c,C));}
+  static vec V(float a, vec A, float b, vec B, float c, vec C) {return A(V(a,A,b,B),V(c,C));}
 
   // PQ
-  vec V(pt P, pt Q) {return new vec(Q.x-P.x,Q.y-P.y,Q.z-P.z);}
+  static vec V(pt P, pt Q) {return new vec(Q.x-P.x,Q.y-P.y,Q.z-P.z);}
 
   // V/||V||
-  vec U(vec V) {float n = V.norm(); if (n<0.000001) return V(0,0,0); else return V.div(n);}
+  static vec U(vec V) {float n = V.norm(); if (n<0.000001) return V(0,0,0); else return V.div(n);}
 
   // UxV cross product (normal to both)
-  vec N(vec U, vec V) {return V( U.y*V.z-U.z*V.y, U.z*V.x-U.x*V.z, U.x*V.y-U.y*V.x); }
+  static vec N(vec U, vec V) {return V( U.y*V.z-U.z*V.y, U.z*V.x-U.x*V.z, U.x*V.y-U.y*V.x); }
 
   // normal to triangle (A,B,C), not normalized (proportional to area)
-  vec N(pt A, pt B, pt C) {return N(V(A,B),V(A,C)); }
+  static vec N(pt A, pt B, pt C) {return N(V(A,B),V(A,C)); }
 
   // (UxV)xV unit normal to U in the plane UV
-  vec B(vec U, vec V) {return U(N(N(U,V),U)); }
+  static vec B(vec U, vec V) {return U(N(N(U,V),U)); }
 
   // ===== point class
-  class pt {
+  static class pt {
 
     float x, y, z;
 
@@ -446,62 +446,62 @@ public class Main extends PApplet {
   // point functions
 
   // point (x,y,z)
-  pt P() {return new pt(); }
+  static pt P() {return new pt(); }
 
   // point (x,y,z)
-  pt P(float x, float y, float z) {return new pt(x,y,z); }
+  static pt P(float x, float y, float z) {return new pt(x,y,z); }
 
   // copy of point P
-  pt P(pt A) {return new pt(A.x,A.y,A.z); }
+  static pt P(pt A) {return new pt(A.x,A.y,A.z); }
 
   // A+sAB
-  pt P(pt A, float s, pt B) {return new pt(A.x+s*(B.x-A.x),A.y+s*(B.y-A.y),A.z+s*(B.z-A.z)); }
+  static pt P(pt A, float s, pt B) {return new pt(A.x+s*(B.x-A.x),A.y+s*(B.y-A.y),A.z+s*(B.z-A.z)); }
 
   // (A+B)/2
-  pt P(pt A, pt B) {return P((A.x+B.x)/2.0f,(A.y+B.y)/2.0f,(A.z+B.z)/2.0f); }
+  static pt P(pt A, pt B) {return P((A.x+B.x)/2.0f,(A.y+B.y)/2.0f,(A.z+B.z)/2.0f); }
 
   // (A+B+C)/3
-  pt P(pt A, pt B, pt C) {return new pt((A.x+B.x+C.x)/3.0f,(A.y+B.y+C.y)/3.0f,(A.z+B.z+C.z)/3.0f); }
+  static pt P(pt A, pt B, pt C) {return new pt((A.x+B.x+C.x)/3.0f,(A.y+B.y+C.y)/3.0f,(A.z+B.z+C.z)/3.0f); }
 
   // (A+B+C+D)/4
-  pt P(pt A, pt B, pt C, pt D) {return P(P(A,B),P(C,D)); }
+  static pt P(pt A, pt B, pt C, pt D) {return P(P(A,B),P(C,D)); }
 
   // sA
-  pt P(float s, pt A) {return new pt(s*A.x,s*A.y,s*A.z); }
+  static pt P(float s, pt A) {return new pt(s*A.x,s*A.y,s*A.z); }
 
   // A+B
-  pt A(pt A, pt B) {return new pt(A.x+B.x,A.y+B.y,A.z+B.z); }
+  static pt A(pt A, pt B) {return new pt(A.x+B.x,A.y+B.y,A.z+B.z); }
 
   // aA+bB
-  pt P(float a, pt A, float b, pt B) {return A(P(a,A),P(b,B));}
+  static pt P(float a, pt A, float b, pt B) {return A(P(a,A),P(b,B));}
 
   // aA+bB+cC
-  pt P(float a, pt A, float b, pt B, float c, pt C) {
+  static pt P(float a, pt A, float b, pt B, float c, pt C) {
     return A(P(a,A),P(b,B,c,C));
   }
 
   // aA+bB+cC+dD
-  pt P(float a, pt A, float b, pt B, float c, pt C, float d, pt D){
+  static pt P(float a, pt A, float b, pt B, float c, pt C, float d, pt D){
     return A(P(a,A,b,B),P(c,C,d,D));
   }
 
   // P+V
-  pt P(pt P, vec V) {return new pt(P.x + V.x, P.y + V.y, P.z + V.z); }
+  static pt P(pt P, vec V) {return new pt(P.x + V.x, P.y + V.y, P.z + V.z); }
 
   // P+sV
-  pt P(pt P, float s, vec V) {return new pt(P.x+s*V.x,P.y+s*V.y,P.z+s*V.z);}
+  static pt P(pt P, float s, vec V) {return new pt(P.x+s*V.x,P.y+s*V.y,P.z+s*V.z);}
 
   // O+xI+yJ
-  pt P(pt O, float x, vec I, float y, vec J) {
+  static pt P(pt O, float x, vec I, float y, vec J) {
     return P(O.x+x*I.x+y*J.x,O.y+x*I.y+y*J.y,O.z+x*I.z+y*J.z);
   }
 
   // O+xI+yJ+kZ
-  pt P(pt O, float x, vec I, float y, vec J, float z, vec K) {
+  static pt P(pt O, float x, vec I, float y, vec J, float z, vec K) {
     return P(O.x+x*I.x+y*J.x+z*K.x,O.y+x*I.y+y*J.y+z*K.y,O.z+x*I.z+y*J.z+z*K.z);
   }
 
-  void makePts(pt[] C) {
+  static void makePts(pt[] C) {
     for(int i=0; i<C.length; i++) C[i]=P();
   }
 
@@ -519,55 +519,55 @@ public class Main extends PApplet {
   // measures
 
   //U*V dot product
-  float d(vec U, vec V) {return U.x*V.x+U.y*V.y+U.z*V.z; }
+  static float d(vec U, vec V) {return U.x*V.x+U.y*V.y+U.z*V.z; }
 
   // (UxV)*W  mixed product, determinant
-  float m(vec U, vec V, vec W) {return d(U,N(V,W)); }
+  static float m(vec U, vec V, vec W) {return d(U,N(V,W)); }
 
   // det (EA EB EC) is >0 when E sees (A,B,C) clockwise
-  float m(pt E, pt A, pt B, pt C) {return m(V(E,A),V(E,B),V(E,C));}
+  static float m(pt E, pt A, pt B, pt C) {return m(V(E,A),V(E,B),V(E,C));}
 
   // V*V    norm squared
-  float n2(vec V) {return sq(V.x)+sq(V.y)+sq(V.z);}
+  static float n2(vec V) {return sq(V.x)+sq(V.y)+sq(V.z);}
 
   // ||V||  norm
-  float n(vec V) {return sqrt(n2(V));}
+  static float n(vec V) {return sqrt(n2(V));}
 
   // ||AB|| distance
-  float d(pt P, pt Q) {return sqrt(sq(Q.x-P.x)+sq(Q.y-P.y)+sq(Q.z-P.z)); }
+  static float d(pt P, pt Q) {return sqrt(sq(Q.x-P.x)+sq(Q.y-P.y)+sq(Q.z-P.z)); }
 
   // area of triangle
-  float area(pt A, pt B, pt C) {return n(N(A,B,C))/2; }
+  static float area(pt A, pt B, pt C) {return n(N(A,B,C))/2; }
 
   // volume of tet
-  float volume(pt A, pt B, pt C, pt D) {return m(V(A,B),V(A,C),V(A,D))/6; }
+  static float volume(pt A, pt B, pt C, pt D) {return m(V(A,B),V(A,C),V(A,D))/6; }
 
   // true if U and V are almost parallel
-  boolean parallel (vec U, vec V) {return n(N(U,V))<n(U)*n(V)*0.00001; }
+  static boolean parallel (vec U, vec V) {return n(N(U,V))<n(U)*n(V)*0.00001; }
 
   // angle(U,V)
-  float angle(vec U, vec V) {return acos(d(U,V)/n(V)/n(U)); }
+  static float angle(vec U, vec V) {return acos(d(U,V)/n(V)/n(U)); }
 
   // (UxV)*W>0  U,V,W are clockwise
-  boolean cw(vec U, vec V, vec W) {return m(U,V,W)>0; }
+  static boolean cw(vec U, vec V, vec W) {return m(U,V,W)>0; }
 
   // tet is oriented so that A sees B, C, D clockwise
-  boolean cw(pt A, pt B, pt C, pt D) {return volume(A,B,C,D)>0; }
+  static boolean cw(pt A, pt B, pt C, pt D) {return volume(A,B,C,D)>0; }
 
   // rotate
 
   // rotated 90 degrees in XY plane
-  vec R(vec V) {return V(-V.y,V.x,V.z);}
+  static vec R(vec V) {return V(-V.y,V.x,V.z);}
 
   // Rotated P by a around G in plane (I,J)
-  pt R(pt P, float a, vec I, vec J, pt G) {
+  static pt R(pt P, float a, vec I, vec J, pt G) {
     float x=d(V(G,P),I), y=d(V(G,P),J);
     float c=cos(a), s=sin(a);
     return P(P,x*c-x-y*s,I,x*s+y*c-y,J);
   }
 
   // Rotated V by a parallel to plane (I,J)
-  vec R(vec V, float a, vec I, vec J) {
+  static vec R(vec V, float a, vec I, vec J) {
     float x=d(V,I), y=d(V,J);
     float c=cos(a), s=sin(a);
     return A(V,V(x*c-x-y*s,I,x*s+y*c-y,J));
