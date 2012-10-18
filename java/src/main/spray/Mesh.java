@@ -17,9 +17,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.*;
-import spray.Geometry.Line;
+import spray.Geometry.Line2;
 import spray.Geometry.Side;
-import spray.Geometry.Vec;
+import spray.Geometry.Vec2;
 
 import static com.google.common.collect.Sets.newHashSet;
 import static java.util.Arrays.asList;
@@ -85,7 +85,7 @@ public final class Mesh {
     for (int i = 0; i < 20; i++) {
       for (Vertex v : vertices) {
         if (v.physics == VertexPhysics.FREE) {
-          Vec accel = xy(0, GRAVITY);
+          Vec2 accel = xy(0, GRAVITY);
           List<Vertex> adjs = newArrayList();
           for (Corner c : v.corners()) adjs.add(c.next().vertex());
           Collections.shuffle(adjs);
@@ -109,7 +109,7 @@ public final class Mesh {
 
   boolean exists(Edge e) { return vertices.contains(e.a) & vertices.contains(e.b); }
 
-  public void remove(Line motion) {
+  public void remove(Line2 motion) {
     for (Mesh.Edge e : edges()) if (overlap(e.line(), motion)) remove(e);
   }
 
@@ -141,20 +141,20 @@ public final class Mesh {
     lastCutVertex = null;
   }
 
-  public void cut(Line cut) {
-    List<Line> ms = Lists.newArrayList(cut);
+  public void cut(Line2 cut) {
+    List<Line2> ms = Lists.newArrayList(cut);
     while (ms.get(0).mag() > 1) {
-      List<Line> ms2 = Lists.newArrayList();
-      for (Line $ : ms) {
+      List<Line2> ms2 = Lists.newArrayList();
+      for (Line2 $ : ms) {
         ms2.add(aToB($.a(), $.midpoint()));
         ms2.add(aToB($.midpoint(), $.b()));
       }
       ms = ms2;
     }
-    for (Line $ : ms) for (Mesh.Edge e : edges()) if (overlap(e.line(), $)) cut(e, $);
+    for (Line2 $ : ms) for (Mesh.Edge e : edges()) if (overlap(e.line(), $)) cut(e, $);
   }
 
-  public void cut(final Edge e, final Line cut) {
+  public void cut(final Edge e, final Line2 cut) {
     if (!exists(e)) return;
 
     List<Triangle> ts = e.triangles();
@@ -270,19 +270,19 @@ public final class Mesh {
   public enum VertexPhysics { PINNED, FREE }
 
   public static class VertexConfig {
-    Vec loc; VertexPhysics physics;
-    public VertexConfig(Vec loc, VertexPhysics physics) {
+    Vec2 loc; VertexPhysics physics;
+    public VertexConfig(Vec2 loc, VertexPhysics physics) {
       this.loc = loc; this.physics = physics; } }
 
   public class Vertex {
     private final int id = ++previousVertexId; public int id() { return id; }
     public int hashCode() { return id; }
-    private Vec loc; public Vec loc() { return loc; }
+    private Vec2 loc; public Vec2 loc() { return loc; }
     private final VertexPhysics physics;
     private Vertex(VertexConfig config) { this.loc = config.loc; this.physics = config.physics; }
     private Corner corner; public Corner corner() { return corner; }
-    private Vec velocity = origin(), nextVelocity;
-    Vec nextPosition(double timeStep) { return nextVelocity.mult(timeStep).add(loc); }
+    private Vec2 velocity = origin2(), nextVelocity;
+    Vec2 nextPosition(double timeStep) { return nextVelocity.mult(timeStep).add(loc); }
     public Iterable<Corner> corners() { return new Iterable<Corner>() {
       public Iterator<Corner> iterator() { return cornersIter(); } }; }
     public Iterator<Corner> cornersIter() { return new Iterator<Corner>() {
@@ -346,7 +346,7 @@ public final class Mesh {
       this.a = flip ? b : a; this.b = flip ? a : b; }
     public Vertex a() { return a; } public Vertex b() { return b; }
     public List<Vertex> vertices() { return asList(a(), b()); }
-    public Line line() { return aToB(a.loc, b.loc); }
+    public Line2 line() { return aToB(a.loc, b.loc); }
     public boolean equals(Object o) {
       return this == o || (o instanceof Edge && a == ((Edge) o).a && b == ((Edge) o).b); }
     public int hashCode() { return 31 * a.hashCode() + b.hashCode(); }
@@ -370,9 +370,9 @@ public final class Mesh {
     public List<Corner> corners() { return asList(a, b, c); }
     public List<Edge> edges() { Vertex a = this.a.vertex, b = this.b.vertex, c = this.c.vertex;
       return asList(new Edge(a, b), new Edge(b, c), new Edge(c, a)); }
-    public List<Line> lines() { Vec a = this.a.vertex.loc, b = this.b.vertex.loc, c = this.c.vertex.loc;
+    public List<Line2> lines() { Vec2 a = this.a.vertex.loc, b = this.b.vertex.loc, c = this.c.vertex.loc;
       return asList(aToB(a, b), aToB(b, c), aToB(c, a)); }
-    public boolean contains(Vec p) { for (Line l : lines()) if (l.side(p) != Side.LEFT) return false; return true; }
+    public boolean contains(Vec2 p) { for (Line2 l : lines()) if (l.side(p) != Side.LEFT) return false; return true; }
     public Corner earCorner() {
       for (Corner corner : asList(a, b, c)) if (corner.swings.next.corner == corner) return corner; return null; }
     public Corner corner(Vertex v) { for (Corner x : corners()) if (x.vertex == v) return x; return null; }
@@ -415,7 +415,7 @@ public final class Mesh {
       final Edge edge; Vertex previousVertex; {
         Entry<Edge, Vertex> entry = openEdges.entrySet().iterator().next();
         edge = entry.getKey(); previousVertex = entry.getValue(); openEdges.remove(edge); }
-      final Line line = edge.line();
+      final Line2 line = edge.line();
       Iterable<Vertex> candidateVertices;
       if (previousVertex == null) {
         candidateVertices = Iterables.filter(vertices, new Predicate<Vertex>() { public boolean apply(Vertex vertex) {
@@ -432,7 +432,7 @@ public final class Mesh {
       Triangle t; {
         Vertex[] tv = { edge.a(), edge.b(), v };
         // vertices are sorted in clockwise rotation about the circumcenter
-        final Vec cc = circle(tv[0].loc(), tv[1].loc(), tv[2].loc()).center();
+        final Vec2 cc = circle(tv[0].loc(), tv[1].loc(), tv[2].loc()).center();
         class X { final double ang; final Vertex v; X(Vertex v) { this.v = v; ang = v.loc().sub(cc).ang(); } }
         X[] xs = { new X(tv[0]), new X(tv[1]), new X(tv[2]) };
         Arrays.sort(xs, new Comparator<X>() { public int compare(X a, X b) { return Double.compare(a.ang, b.ang); }});
