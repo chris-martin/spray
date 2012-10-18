@@ -756,6 +756,8 @@ public final class Geometry {
 
         public float mag();
 
+        public float magSquared();
+
         public Vec3 mag(float newMag);
 
         /**
@@ -880,8 +882,8 @@ public final class Geometry {
 
     private static class XYZ extends BaseVec3 {
         final float x, y, z;
-        float mag;
-        boolean hasMag;
+        float mag, magSquared;
+        boolean hasMag, hasMagSquared;
 
         XYZ(float x, float y, float z) {
             this.x = x;
@@ -903,10 +905,18 @@ public final class Geometry {
 
         public float mag() {
             if (!hasMag) {
-                mag = (float) sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
+                mag = (float) sqrt(magSquared());
                 hasMag = true;
             }
             return mag;
+        }
+
+        public float magSquared() {
+            if (!hasMagSquared) {
+                magSquared = (float) (pow(x, 2) + pow(y, 2) + pow(z, 2));
+                hasMagSquared = true;
+            }
+            return magSquared;
         }
 
         public Vec3 mult(float f) {
@@ -941,6 +951,10 @@ public final class Geometry {
         }
 
         public float mag() {
+            return 0;
+        }
+
+        public float magSquared() {
             return 0;
         }
 
@@ -1029,6 +1043,89 @@ public final class Geometry {
 
     public static float distance(Vec3 a, Vec3 b) {
         return a.sub(b).mag();
+    }
+
+    public static Vec2 midpoint(Vec2 a, Vec2 b) {
+        return a.sub(b).div(2);
+    }
+
+    public static Vec3 midpoint(Vec3 a, Vec3 b) {
+        return a.sub(b).div(2);
+    }
+
+
+    /**
+     * A directed line segment in three dimensional space.
+     */
+    public static interface Line3 {
+
+        Vec3 a();
+
+        Vec3 b();
+
+        Vec3 ab();
+
+        float mag();
+
+        Line3 add(Vec3 offset);
+
+        Line3 sub(Vec3 offset);
+
+        Vec3 midpoint();
+
+    }
+
+    private static class AtoB3 implements Line3 {
+        final Vec3 a, b;
+        Vec3 ab;
+
+        AtoB3(Vec3 a, Vec3 b) {
+            this.a = a;
+            this.b = b;
+        }
+
+        AtoB3(Vec3 a, Vec3 b, Vec3 ab) {
+            this.a = a;
+            this.b = b;
+            this.ab = ab;
+        }
+
+        public Vec3 a() {
+            return a;
+        }
+
+        public Vec3 b() {
+            return b;
+        }
+
+        public Vec3 ab() {
+            if (ab == null) ab = b.sub(a);
+            return ab;
+        }
+
+        public float mag() {
+            return ab().mag();
+        }
+
+        public Line3 add(Vec3 offset) {
+            return new AtoB3(offset.add(a), b.add(offset), ab);
+        }
+
+        public Line3 sub(Vec3 offset) {
+            return new AtoB3(offset.sub(a), b.sub(offset), ab);
+        }
+
+        public Vec3 midpoint() {
+            return a.add(b).div(2);
+        }
+
+        public String toString() {
+            return String.format("Line %s to %s", a, b);
+        }
+    }
+
+    public static Line3 aToB(Vec3 a, Vec3 b) {
+        return new AtoB3(a, b);
     }
 
 }
