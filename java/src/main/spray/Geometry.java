@@ -200,7 +200,8 @@ public final class Geometry {
             return new XY(-1 * y, x);
         }
 
-        public XY mult(double f) {
+        public Vec2 mult(double f) {
+            if (f == 0) return origin2();
             return new XY(f * x, f * y);
         }
 
@@ -210,7 +211,7 @@ public final class Geometry {
     }
 
     public static Vec2 xy(double x, double y) {
-        return x == 0 && y == 0 ? ORIGIN : new XY(x, y);
+        return x == 0 && y == 0 ? ORIGIN_2 : new XY(x, y);
     }
 
     public static Vec2 xy(Number x, Number y) {
@@ -273,7 +274,8 @@ public final class Geometry {
             return new Ang2(ang + HALFPI, mag);
         }
 
-        public Ang2 mult(double f) {
+        public Vec2 mult(double f) {
+            if (f == 0) return origin2();
             return new Ang2(ang, f * mag);
         }
 
@@ -283,7 +285,7 @@ public final class Geometry {
     }
 
     public static Vec2 angleVec2(double ang, double mag) {
-        return mag == 0 ? ORIGIN : new Ang2(ang, mag);
+        return mag == 0 ? ORIGIN_2 : new Ang2(ang, mag);
     }
 
     public static Vec2 angleVec2(Number ang, Number mag) {
@@ -306,7 +308,7 @@ public final class Geometry {
         return new Ang2(ang.doubleValue());
     }
 
-    private static class Origin implements Vec2 {
+    private static class Origin2 implements Vec2 {
         public double x() {
             return 0;
         }
@@ -404,10 +406,10 @@ public final class Geometry {
         }
     }
 
-    private static final Origin ORIGIN = new Origin();
+    private static final Origin2 ORIGIN_2 = new Origin2();
 
     public static Vec2 origin2() {
-        return ORIGIN;
+        return ORIGIN_2;
     }
 
     /**
@@ -478,7 +480,7 @@ public final class Geometry {
         }
 
         public Vec2 a() {
-            return ORIGIN;
+            return ORIGIN_2;
         }
 
         public Vec2 b() {
@@ -735,6 +737,287 @@ public final class Geometry {
         Vec2[] is = new Vec2[]{xy(Ddy + qx, nDdx + qy), xy(Ddy - qx, nDdx - qy)};
         for (int i = 0; i < 2; i++) is[i] = is[i].div(pow(dr, 2)).add(cc);
         return is;
+    }
+
+
+    /**
+     * A point in three dimensions.
+     */
+    public static interface Vec3 extends Comparable<Vec3> {
+
+        public double x();
+
+        public double y();
+
+        public double z();
+
+        public double mag();
+
+        public Vec3 mag(double newMag);
+
+        /**
+         * Equivalent to mag(1).
+         */
+        public Vec3 unit();
+
+        public Vec3 add(Vec3 o);
+
+        public Vec3 sub(Vec3 o);
+
+        public Vec3 mult(double factor);
+
+        public Vec3 mult(Number factor);
+
+        public Vec3 div(double divisor);
+
+        public Vec3 div(Number divisor);
+
+        public Vec3 addX(double o);
+
+        public Vec3 addY(double o);
+
+        public Vec3 addZ(double o);
+
+        public Vec3 subX(double o);
+
+        public Vec3 subY(double o);
+
+        public Vec3 subZ(double o);
+
+        /**
+         * This is exactly (0, 0, 0).
+         */
+        public boolean isOrigin();
+
+        /**
+         * Scalar (dot) product.
+         */
+        public double dot(Vec3 o);
+
+        /**
+         * Cross product U X V, normal to both U and V.
+         */
+        public Vec3 cross(Vec3 o);
+
+    }
+
+    private static abstract class BaseVec3 implements Vec3 {
+        public int compareTo(Vec3 o) {
+            return Double.compare(mag(), o.mag());
+        }
+
+        public Vec3 add(Vec3 o) {
+            return new XYZ(this.x() + o.x(), this.y() + o.y(), this.z() + o.z());
+        }
+
+        public Vec3 sub(Vec3 o) {
+            return new XYZ(this.x() - o.x(), this.y() - o.y(), this.z() - o.z());
+        }
+
+        public Vec3 mag(double newMag) {
+            return unit().mult(newMag);
+        }
+
+        public Vec3 unit() {
+            return div(mag());
+        }
+
+        public Vec3 mult(Number factor) {
+            return mult(factor.doubleValue());
+        }
+
+        public Vec3 div(Number divisor) {
+            return div(divisor.doubleValue());
+        }
+
+        public Vec3 addX(double $) {
+            return xyz(x() + $, y(), z());
+        }
+
+        public Vec3 addY(double $) {
+            return xyz(x(), y() + $, z());
+        }
+
+        public Vec3 addZ(double $) {
+            return xyz(x(), y(), z() + $);
+        }
+
+        public Vec3 subX(double $) {
+            return xyz(x() - $, y(), z());
+        }
+
+        public Vec3 subY(double $) {
+            return xyz(x(), y() - $, z());
+        }
+
+        public Vec3 subZ(double $) {
+            return xyz(x(), y(), z() - $);
+        }
+
+        public double dot(Vec3 o) {
+            return x() * o.x() + y() * o.y() + z() * o.z();
+        }
+
+        public Vec3 cross(Vec3 o) {
+            return xyz(
+                y() * o.z() - z() * o.y(),
+                z() * o.x() - x() * o.z(),
+                x() * o.y() - y() * o.x()
+            );
+        }
+
+        public boolean isOrigin() {
+            return false;
+        }
+
+        public String toString() {
+            return String.format("(%f, %f, %f)", x(), y(), z());
+        }
+    }
+
+    private static class XYZ extends BaseVec3 {
+        final double x, y, z;
+        double mag;
+        boolean hasMag;
+
+        XYZ(double x, double y, double z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        public double x() {
+            return x;
+        }
+
+        public double y() {
+            return y;
+        }
+
+        public double z() {
+            return z;
+        }
+
+        public double mag() {
+            if (!hasMag) {
+                mag = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
+                hasMag = true;
+            }
+            return mag;
+        }
+
+        public Vec3 mult(double f) {
+            if (f == 0) return origin3();
+            return new XYZ(f * x, f * y, f * z);
+        }
+
+        public XYZ div(double d) {
+            return new XYZ(x / d, y / d, z / d);
+        }
+    }
+
+    public static Vec3 xyz(double x, double y, double z) {
+        return x == 0 && y == 0 && z == 0 ? ORIGIN_3 : new XYZ(x, y, z);
+    }
+
+    public static Vec3 xyz(Number x, Number y, Number z) {
+        return xyz(x.doubleValue(), y.doubleValue(), z.doubleValue());
+    }
+
+    private static class Origin3 implements Vec3 {
+        public double x() {
+            return 0;
+        }
+
+        public double y() {
+            return 0;
+        }
+
+        public double z() {
+            return 0;
+        }
+
+        public double mag() {
+            return 0;
+        }
+
+        public Vec3 mult(double factor) {
+            return this;
+        }
+
+        public Vec3 div(double divisor) {
+            return this;
+        }
+
+        public Vec3 add(Vec3 o) {
+            return o;
+        }
+
+        public Vec3 sub(Vec3 o) {
+            return o.mult(-1);
+        }
+
+        public Vec3 addX(double $) {
+            return xyz($, 0, 0);
+        }
+
+        public Vec3 addY(double $) {
+            return xyz(0, $, 0);
+        }
+
+        public Vec3 addZ(double $) {
+            return xyz(0, 0, $);
+        }
+
+        public Vec3 subX(double $) {
+            return xyz(-$, 0, 0);
+        }
+
+        public Vec3 subY(double $) {
+            return xyz(0, -$, 0);
+        }
+
+        public Vec3 subZ(double $) {
+            return xyz(0, 0, -$);
+        }
+
+        public Vec3 mag(double newMag) {
+            throw new UnsupportedOperationException();
+        }
+
+        public Vec3 unit() {
+            throw new UnsupportedOperationException();
+        }
+
+        public Vec3 mult(Number factor) {
+            return this;
+        }
+
+        public Vec3 div(Number divisor) {
+            return this;
+        }
+
+        public double dot(Vec3 o) {
+            return 0;
+        }
+
+        public Vec3 cross(Vec3 o) {
+            return this;
+        }
+
+        public int compareTo(Vec3 o) {
+            return Double.compare(0, o.mag());
+        }
+
+        public boolean isOrigin() {
+            return true;
+        }
+    }
+
+    private static final Origin3 ORIGIN_3 = new Origin3();
+
+    public static Vec3 origin3() {
+        return ORIGIN_3;
     }
 
 }
