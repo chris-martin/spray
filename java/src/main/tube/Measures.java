@@ -9,7 +9,7 @@ public class Measures {
 
     //U*V dot product
     public static float d(Vec U, Vec V) {
-        return U.x * V.x + U.y * V.y + U.z * V.z;
+        return U.$.x() * V.$.x() + U.$.y() * V.$.y() + U.$.z() * V.$.z();
     }
 
     // (UxV)*W  mixed product, determinant
@@ -24,7 +24,7 @@ public class Measures {
 
     // V*V    norm squared
     public static float n2(Vec V) {
-        return sq(V.x) + sq(V.y) + sq(V.z);
+        return sq(V.$.x()) + sq(V.$.y()) + sq(V.$.z());
     }
 
     // ||V||  norm
@@ -34,7 +34,7 @@ public class Measures {
 
     // ||AB|| distance
     public static float d(Pt P, Pt Q) {
-        return sqrt(sq(Q.x - P.x) + sq(Q.y - P.y) + sq(Q.z - P.z));
+        return sqrt(sq(Q.$.x() - P.$.x()) + sq(Q.$.y() - P.$.y()) + sq(Q.$.z() - P.$.z()));
     }
 
     // area of triangle

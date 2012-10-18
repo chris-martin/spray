@@ -13,14 +13,14 @@ import static org.testng.Assert.assertEquals;
 
 public class GeometryTest {
 
-  double epsilon = pow(10, -6);
+  float epsilon = (float) pow(10, -6);
 
-  boolean approx(double a, double b) { return a - b < epsilon; }
+  boolean approx(float a, float b) { return a - b < epsilon; }
 
   boolean approx(Vec2 a, Vec2 b) {
     return approx(a.x(), b.x()) && approx(a.y(), b.y()); }
 
-  void assertApprox(double actual, double expected) {
+  void assertApprox(float actual, float expected) {
     if (!approx(actual, expected)) throw new AssertionError(
       String.format("Expected %f but got %f", expected, actual)); }
 
@@ -39,7 +39,7 @@ public class GeometryTest {
   boolean containsApprox(Collection<Vec2> haystack, Vec2 needle) {
     for (Vec2 v : haystack) if (approx(v, needle)) return true; return false; }
 
-  void assertLess(double a, double b) {
+  void assertLess(float a, float b) {
     if (a >= b) throw new AssertionError(String.format("Expected a < b, got a=%f, b=%f", a ,b)); }
 
   @Test public void testVecAdd() { assertApprox(xy(1, 2).add(xy(5, 11)), xy(6, 13)); }
@@ -54,10 +54,10 @@ public class GeometryTest {
   @Test public void testVecDot3() { assertApprox(origin2().dot(xy(4, 19)), 0); }
 
   @Test public void testVecMag1() { assertApprox(xy(3, 4).mag(), 5); }
-  @Test public void testVecMag2() { assertApprox(xy(-1, 1).mag(), sqrt(2)); }
+  @Test public void testVecMag2() { assertApprox(xy(-1, 1).mag(), (float) sqrt(2)); }
 
   @Test public void testVecAng1() { assertApprox(xy(1, 0).ang(), 0); }
-  @Test public void testVecAng2() { assertApprox(xy(-1, 0).ang(), PI); }
+  @Test public void testVecAng2() { assertApprox(xy(-1, 0).ang(), (float) PI); }
 
   @Test public void testLineSide1() { assertEquals(oTo2(xy(0, 1)).side(xy(1, 1)), RIGHT); }
   @Test public void testLineSide2() { assertEquals(oTo2(xy(0, 1)).side(xy(-1, 1)), LEFT); }

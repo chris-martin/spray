@@ -8,18 +8,21 @@ public final class Geometry {
     private Geometry() {
     }
 
-    private static final double PI2 = PI * 2;
-    private static final double HALFPI = PI / 2;
+    private static final float EPSILON = 0.000001f;
 
-    private static double angle(double a) {
+    private static final float PI = (float) Math.PI;
+    private static final float PI2 = PI * 2;
+    private static final float HALFPI = PI / 2;
+
+    private static float angle(float a) {
         return a < 0 ? ((a % PI2) + PI2) : (a % PI2);
     }
 
-    private static double angle(double a, boolean flip) {
+    private static float angle(float a, boolean flip) {
         return angle(flip ? a + PI : a);
     }
 
-    private static int sign(double x) {
+    private static int sign(float x) {
         return x == 0 ? 0 : (x < 0 ? -1 : 1);
     }
 
@@ -28,15 +31,15 @@ public final class Geometry {
      */
     public static interface Vec2 extends Comparable<Vec2> {
 
-        public double x();
+        public float x();
 
-        public double y();
+        public float y();
 
-        public double ang();
+        public float ang();
 
-        public double mag();
+        public float mag();
 
-        public Vec2 mag(double newMag);
+        public Vec2 mag(float newMag);
 
         /**
          * Equivalent to mag(1).
@@ -47,25 +50,25 @@ public final class Geometry {
 
         public Vec2 sub(Vec2 o);
 
-        public Vec2 mult(double factor);
+        public Vec2 mult(float factor);
 
         public Vec2 mult(Number factor);
 
-        public Vec2 div(double divisor);
+        public Vec2 div(float divisor);
 
         public Vec2 div(Number divisor);
 
-        public Vec2 rot(double ang);
+        public Vec2 rot(float ang);
 
         public Vec2 rot(Number ang);
 
-        public Vec2 addX(double o);
+        public Vec2 addX(float o);
 
-        public Vec2 addY(double o);
+        public Vec2 addY(float o);
 
-        public Vec2 subX(double o);
+        public Vec2 subX(float o);
 
-        public Vec2 subY(double o);
+        public Vec2 subY(float o);
 
         /**
          * This is exactly (0, 0).
@@ -79,18 +82,18 @@ public final class Geometry {
         /**
          * Scalar (dot) product.
          */
-        public double dot(Vec2 o);
+        public float dot(Vec2 o);
 
         /**
          * U x V = U dot rot90(V).
          */
-        public double cross(Vec2 o);
+        public float cross(Vec2 o);
 
     }
 
     private static abstract class BaseVec2 implements Vec2 {
         public int compareTo(Vec2 o) {
-            return Double.compare(mag(), o.mag());
+            return Float.compare(mag(), o.mag());
         }
 
         public Vec2 add(Vec2 o) {
@@ -101,7 +104,7 @@ public final class Geometry {
             return new XY(this.x() - o.x(), this.y() - o.y());
         }
 
-        public Vec2 mag(double newMag) {
+        public Vec2 mag(float newMag) {
             return new Ang2(ang(), newMag);
         }
 
@@ -110,43 +113,43 @@ public final class Geometry {
         }
 
         public Vec2 mult(Number factor) {
-            return mult(factor.doubleValue());
+            return mult(factor.floatValue());
         }
 
         public Vec2 div(Number divisor) {
-            return div(divisor.doubleValue());
+            return div(divisor.floatValue());
         }
 
-        public Vec2 addX(double $) {
+        public Vec2 addX(float $) {
             return xy(x() + $, y());
         }
 
-        public Vec2 addY(double $) {
+        public Vec2 addY(float $) {
             return xy(x(), y() + $);
         }
 
-        public Vec2 subX(double $) {
+        public Vec2 subX(float $) {
             return xy(x() - $, y());
         }
 
-        public Vec2 subY(double $) {
+        public Vec2 subY(float $) {
             return xy(x(), y() - $);
         }
 
-        public double dot(Vec2 o) {
+        public float dot(Vec2 o) {
             return x() * o.x() + y() * o.y();
         }
 
-        public double cross(Vec2 o) {
+        public float cross(Vec2 o) {
             return dot(o.rot90());
         }
 
-        public Vec2 rot(double ang) {
+        public Vec2 rot(float ang) {
             return new Ang2(ang() + ang, mag());
         }
 
         public Vec2 rot(Number ang) {
-            return rot(ang.doubleValue());
+            return rot(ang.floatValue());
         }
 
         public boolean isOrigin() {
@@ -159,34 +162,34 @@ public final class Geometry {
     }
 
     private static class XY extends BaseVec2 {
-        final double x, y;
-        double ang, mag;
+        final float x, y;
+        float ang, mag;
         boolean hasAng, hasMag;
 
-        XY(double x, double y) {
+        XY(float x, float y) {
             this.x = x;
             this.y = y;
         }
 
-        public double x() {
+        public float x() {
             return x;
         }
 
-        public double y() {
+        public float y() {
             return y;
         }
 
-        public double ang() {
+        public float ang() {
             if (!hasAng) {
-                ang = atan2(y, x);
+                ang = (float) atan2(y, x);
                 hasMag = true;
             }
             return ang;
         }
 
-        public double mag() {
+        public float mag() {
             if (!hasMag) {
-                mag = sqrt(pow(x, 2) + pow(y, 2));
+                mag = (float) sqrt(pow(x, 2) + pow(y, 2));
                 hasMag = true;
             }
             return mag;
@@ -200,22 +203,22 @@ public final class Geometry {
             return new XY(-1 * y, x);
         }
 
-        public Vec2 mult(double f) {
-            if (f == 0) return origin2();
+        public Vec2 mult(float f) {
+            if (abs(f) < EPSILON) return origin2();
             return new XY(f * x, f * y);
         }
 
-        public XY div(double d) {
+        public XY div(float d) {
             return new XY(x / d, y / d);
         }
     }
 
-    public static Vec2 xy(double x, double y) {
-        return x == 0 && y == 0 ? ORIGIN_2 : new XY(x, y);
+    public static Vec2 xy(float x, float y) {
+        return abs(x) < EPSILON && abs(y) < EPSILON ? ORIGIN_2 : new XY(x, y);
     }
 
     public static Vec2 xy(Number x, Number y) {
-        return xy(x.doubleValue(), y.doubleValue());
+        return xy(x.floatValue(), y.floatValue());
     }
 
     public static Vec2 xy(java.awt.Point p) {
@@ -227,42 +230,42 @@ public final class Geometry {
     }
 
     private static class Ang2 extends BaseVec2 {
-        final double ang, mag;
-        double x, y;
+        final float ang, mag;
+        float x, y;
         boolean hasXy;
 
-        Ang2(double ang, double mag) {
+        Ang2(float ang, float mag) {
             this.ang = angle(ang, mag < 0);
             this.mag = abs(mag);
         }
 
-        Ang2(double ang) {
+        Ang2(float ang) {
             this.ang = angle(ang);
             mag = 1;
         }
 
         private void ensureXy() {
             if (hasXy) return;
-            x = mag * cos(ang);
-            y = mag * sin(ang);
+            x = mag * (float) cos(ang);
+            y = mag * (float) sin(ang);
             hasXy = true;
         }
 
-        public double x() {
+        public float x() {
             ensureXy();
             return x;
         }
 
-        public double y() {
+        public float y() {
             ensureXy();
             return y;
         }
 
-        public double ang() {
+        public float ang() {
             return ang;
         }
 
-        public double mag() {
+        public float mag() {
             return mag;
         }
 
@@ -274,62 +277,62 @@ public final class Geometry {
             return new Ang2(ang + HALFPI, mag);
         }
 
-        public Vec2 mult(double f) {
-            if (f == 0) return origin2();
+        public Vec2 mult(float f) {
+            if (abs(f) < EPSILON) return origin2();
             return new Ang2(ang, f * mag);
         }
 
-        public Ang2 div(double d) {
+        public Ang2 div(float d) {
             return new Ang2(ang, mag / d);
         }
     }
 
-    public static Vec2 angleVec2(double ang, double mag) {
-        return mag == 0 ? ORIGIN_2 : new Ang2(ang, mag);
+    public static Vec2 angleVec2(float ang, float mag) {
+        return abs(mag) < EPSILON ? ORIGIN_2 : new Ang2(ang, mag);
     }
 
     public static Vec2 angleVec2(Number ang, Number mag) {
-        return angleVec2(ang.doubleValue(), mag.doubleValue());
+        return angleVec2(ang.floatValue(), mag.floatValue());
     }
 
-    public static Vec2 angleVec2(double ang, Number mag) {
-        return angleVec2(ang, mag.doubleValue());
+    public static Vec2 angleVec2(float ang, Number mag) {
+        return angleVec2(ang, mag.floatValue());
     }
 
-    public static Vec2 angleVec2(Number ang, double mag) {
-        return angleVec2(ang.doubleValue(), mag);
+    public static Vec2 angleVec2(Number ang, float mag) {
+        return angleVec2(ang.floatValue(), mag);
     }
 
-    public static Vec2 angleVec2(double ang) {
+    public static Vec2 angleVec2(float ang) {
         return new Ang2(ang);
     }
 
     public static Vec2 angleVec2(Number ang) {
-        return new Ang2(ang.doubleValue());
+        return new Ang2(ang.floatValue());
     }
 
     private static class Origin2 implements Vec2 {
-        public double x() {
+        public float x() {
             return 0;
         }
 
-        public double y() {
+        public float y() {
             return 0;
         }
 
-        public double ang() {
+        public float ang() {
             throw new UnsupportedOperationException();
         }
 
-        public double mag() {
+        public float mag() {
             return 0;
         }
 
-        public Vec2 mult(double factor) {
+        public Vec2 mult(float factor) {
             return this;
         }
 
-        public Vec2 div(double divisor) {
+        public Vec2 div(float divisor) {
             return this;
         }
 
@@ -349,23 +352,23 @@ public final class Geometry {
             return o.mult(-1);
         }
 
-        public Vec2 addX(double $) {
+        public Vec2 addX(float $) {
             return xy($, 0);
         }
 
-        public Vec2 addY(double $) {
+        public Vec2 addY(float $) {
             return xy(0, $);
         }
 
-        public Vec2 subX(double $) {
+        public Vec2 subX(float $) {
             return xy(-$, 0);
         }
 
-        public Vec2 subY(double $) {
+        public Vec2 subY(float $) {
             return xy(0, -$);
         }
 
-        public Vec2 mag(double newMag) {
+        public Vec2 mag(float newMag) {
             throw new UnsupportedOperationException();
         }
 
@@ -381,15 +384,15 @@ public final class Geometry {
             return this;
         }
 
-        public double dot(Vec2 o) {
+        public float dot(Vec2 o) {
             return 0;
         }
 
-        public double cross(Vec2 o) {
+        public float cross(Vec2 o) {
             return 0;
         }
 
-        public Vec2 rot(double ang) {
+        public Vec2 rot(float ang) {
             return this;
         }
 
@@ -398,7 +401,7 @@ public final class Geometry {
         }
 
         public int compareTo(Vec2 o) {
-            return Double.compare(0, o.mag());
+            return Float.compare(0, o.mag());
         }
 
         public boolean isOrigin() {
@@ -423,9 +426,9 @@ public final class Geometry {
 
         Vec2 ab();
 
-        double mag();
+        float mag();
 
-        double ang();
+        float ang();
 
         Side side(Vec2 p);
 
@@ -440,7 +443,7 @@ public final class Geometry {
         /**
          * Not equal, but correlated, to "bulge" as defined by Jarek Rossignac.
          */
-        double bulge(Vec2 p);
+        float bulge(Vec2 p);
 
     }
 
@@ -466,7 +469,7 @@ public final class Geometry {
             return pointAndStep(midpoint(), Geometry.angleVec2(ang()).rot90());
         }
 
-        public double bulge(Vec2 p) {
+        public float bulge(Vec2 p) {
             Circle2 c = circle(a(), b(), p);
             return c.radius() * side(p).i * side(c.center()).i;
         }
@@ -491,11 +494,11 @@ public final class Geometry {
             return b;
         }
 
-        public double ang() {
+        public float ang() {
             return b.ang();
         }
 
-        public double mag() {
+        public float mag() {
             return b.mag();
         }
 
@@ -512,7 +515,7 @@ public final class Geometry {
         }
     }
 
-    public static Line2 oTo2(double ang) {
+    public static Line2 oTo2(float ang) {
         return new OriginLine2(Geometry.angleVec2(ang));
     }
 
@@ -552,11 +555,11 @@ public final class Geometry {
             return ab;
         }
 
-        public double ang() {
+        public float ang() {
             return ab().ang();
         }
 
-        public double mag() {
+        public float mag() {
             return ab().mag();
         }
 
@@ -603,11 +606,11 @@ public final class Geometry {
             return ab;
         }
 
-        public double ang() {
+        public float ang() {
             return ab.ang();
         }
 
-        public double mag() {
+        public float mag() {
             return ab.mag();
         }
 
@@ -628,7 +631,7 @@ public final class Geometry {
         return new PointAndDirection(a, ab);
     }
 
-    public static Line2 pointAndStep(Vec2 a, double ang) {
+    public static Line2 pointAndStep(Vec2 a, float ang) {
         return new PointAndDirection(a, Geometry.angleVec2(ang));
     }
 
@@ -639,10 +642,10 @@ public final class Geometry {
     public static Vec2 intersect(Line2 ab, Line2 cd) {
         Vec2 v1 = ab.a(), v2 = ab.b(), v3 = cd.a(), v4 = cd.b();
         // http://en.wikipedia.org/wiki/Line-line_intersection
-        double x1 = v1.x(), y1 = v1.y(), x2 = v2.x(), y2 = v2.y(), x3 = v3.x(), y3 = v3.y(), x4 = v4.x(), y4 = v4.y();
-        double d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-        double x = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / d;
-        double y = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / d;
+        float x1 = v1.x(), y1 = v1.y(), x2 = v2.x(), y2 = v2.y(), x3 = v3.x(), y3 = v3.y(), x4 = v4.x(), y4 = v4.y();
+        float d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        float x = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / d;
+        float y = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / d;
         return xy(x, y);
     }
 
@@ -654,14 +657,14 @@ public final class Geometry {
     public static interface Circle2 {
         Vec2 center();
 
-        double radius();
+        float radius();
     }
 
     private static class SimpleCircle2 implements Circle2 {
         final Vec2 center;
-        final double radius;
+        final float radius;
 
-        SimpleCircle2(Vec2 center, double radius) {
+        SimpleCircle2(Vec2 center, float radius) {
             this.center = center;
             this.radius = radius;
         }
@@ -670,23 +673,23 @@ public final class Geometry {
             return center;
         }
 
-        public double radius() {
+        public float radius() {
             return radius;
         }
     }
 
-    public static Circle2 circle(Vec2 center, double radius) {
+    public static Circle2 circle(Vec2 center, float radius) {
         return new SimpleCircle2(center, radius);
     }
 
     public static Circle2 circle(Vec2 center, Number radius) {
-        return new SimpleCircle2(center, radius.doubleValue());
+        return new SimpleCircle2(center, radius.floatValue());
     }
 
     private static class TriangleCircle2 implements Circle2 {
         final Vec2[] vs;
         Vec2 center;
-        double radius;
+        float radius;
         boolean hasRadius;
 
         TriangleCircle2(Vec2[] vs) {
@@ -702,7 +705,7 @@ public final class Geometry {
             center = intersect(aToB(vs[0], vs[1]).bisect(), aToB(vs[1], vs[2]).bisect());
         }
 
-        public double radius() {
+        public float radius() {
             if (!hasRadius) _radius();
             return radius;
         }
@@ -722,17 +725,17 @@ public final class Geometry {
      */
     public static Vec2[] intersect(Line2 line, Circle2 circle) {
         // http://mathworld.wolfram.com/Circle-LineIntersection.html
-        double r = circle.radius();
+        float r = circle.radius();
         Vec2 cc = circle.center();
         line = line.sub(cc);
         Vec2 a = line.a(), b = line.b(), ab = line.ab();
-        double dx = ab.x(), dy = ab.y();
-        double dr = sqrt(pow(dx, 2) + pow(dy, 2));
-        double D = a.x() * b.y() - b.x() * a.y();
-        double q = sqrt(pow(r, 2) * pow(dr, 2) - pow(D, 2));
+        float dx = ab.x(), dy = ab.y();
+        float dr = (float) sqrt(pow(dx, 2) + pow(dy, 2));
+        float D = a.x() * b.y() - b.x() * a.y();
+        float q = (float) sqrt(pow(r, 2) * pow(dr, 2) - pow(D, 2));
         if (q < 0) return new Vec2[0];
-        double qx = sign(dy) * dx * q, qy = abs(dy) * q;
-        double Ddy = D * dy, nDdx = 0 - D * dx;
+        float qx = sign(dy) * dx * q, qy = abs(dy) * q;
+        float Ddy = D * dy, nDdx = 0 - D * dx;
         if (qx == 0 && qy == 0) return new Vec2[]{xy(Ddy, nDdx)};
         Vec2[] is = new Vec2[]{xy(Ddy + qx, nDdx + qy), xy(Ddy - qx, nDdx - qy)};
         for (int i = 0; i < 2; i++) is[i] = is[i].div(pow(dr, 2)).add(cc);
@@ -745,15 +748,15 @@ public final class Geometry {
      */
     public static interface Vec3 extends Comparable<Vec3> {
 
-        public double x();
+        public float x();
 
-        public double y();
+        public float y();
 
-        public double z();
+        public float z();
 
-        public double mag();
+        public float mag();
 
-        public Vec3 mag(double newMag);
+        public Vec3 mag(float newMag);
 
         /**
          * Equivalent to mag(1).
@@ -764,25 +767,25 @@ public final class Geometry {
 
         public Vec3 sub(Vec3 o);
 
-        public Vec3 mult(double factor);
+        public Vec3 mult(float factor);
 
         public Vec3 mult(Number factor);
 
-        public Vec3 div(double divisor);
+        public Vec3 div(float divisor);
 
         public Vec3 div(Number divisor);
 
-        public Vec3 addX(double o);
+        public Vec3 addX(float o);
 
-        public Vec3 addY(double o);
+        public Vec3 addY(float o);
 
-        public Vec3 addZ(double o);
+        public Vec3 addZ(float o);
 
-        public Vec3 subX(double o);
+        public Vec3 subX(float o);
 
-        public Vec3 subY(double o);
+        public Vec3 subY(float o);
 
-        public Vec3 subZ(double o);
+        public Vec3 subZ(float o);
 
         /**
          * This is exactly (0, 0, 0).
@@ -792,7 +795,7 @@ public final class Geometry {
         /**
          * Scalar (dot) product.
          */
-        public double dot(Vec3 o);
+        public float dot(Vec3 o);
 
         /**
          * Cross product U X V, normal to both U and V.
@@ -803,7 +806,7 @@ public final class Geometry {
 
     private static abstract class BaseVec3 implements Vec3 {
         public int compareTo(Vec3 o) {
-            return Double.compare(mag(), o.mag());
+            return Float.compare(mag(), o.mag());
         }
 
         public Vec3 add(Vec3 o) {
@@ -814,7 +817,7 @@ public final class Geometry {
             return new XYZ(this.x() - o.x(), this.y() - o.y(), this.z() - o.z());
         }
 
-        public Vec3 mag(double newMag) {
+        public Vec3 mag(float newMag) {
             return unit().mult(newMag);
         }
 
@@ -823,38 +826,38 @@ public final class Geometry {
         }
 
         public Vec3 mult(Number factor) {
-            return mult(factor.doubleValue());
+            return mult(factor.floatValue());
         }
 
         public Vec3 div(Number divisor) {
-            return div(divisor.doubleValue());
+            return div(divisor.floatValue());
         }
 
-        public Vec3 addX(double $) {
+        public Vec3 addX(float $) {
             return xyz(x() + $, y(), z());
         }
 
-        public Vec3 addY(double $) {
+        public Vec3 addY(float $) {
             return xyz(x(), y() + $, z());
         }
 
-        public Vec3 addZ(double $) {
+        public Vec3 addZ(float $) {
             return xyz(x(), y(), z() + $);
         }
 
-        public Vec3 subX(double $) {
+        public Vec3 subX(float $) {
             return xyz(x() - $, y(), z());
         }
 
-        public Vec3 subY(double $) {
+        public Vec3 subY(float $) {
             return xyz(x(), y() - $, z());
         }
 
-        public Vec3 subZ(double $) {
+        public Vec3 subZ(float $) {
             return xyz(x(), y(), z() - $);
         }
 
-        public double dot(Vec3 o) {
+        public float dot(Vec3 o) {
             return x() * o.x() + y() * o.y() + z() * o.z();
         }
 
@@ -876,76 +879,76 @@ public final class Geometry {
     }
 
     private static class XYZ extends BaseVec3 {
-        final double x, y, z;
-        double mag;
+        final float x, y, z;
+        float mag;
         boolean hasMag;
 
-        XYZ(double x, double y, double z) {
+        XYZ(float x, float y, float z) {
             this.x = x;
             this.y = y;
             this.z = z;
         }
 
-        public double x() {
+        public float x() {
             return x;
         }
 
-        public double y() {
+        public float y() {
             return y;
         }
 
-        public double z() {
+        public float z() {
             return z;
         }
 
-        public double mag() {
+        public float mag() {
             if (!hasMag) {
-                mag = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
+                mag = (float) sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
                 hasMag = true;
             }
             return mag;
         }
 
-        public Vec3 mult(double f) {
-            if (f == 0) return origin3();
+        public Vec3 mult(float f) {
+            if (abs(f) < EPSILON) return origin3();
             return new XYZ(f * x, f * y, f * z);
         }
 
-        public XYZ div(double d) {
+        public XYZ div(float d) {
             return new XYZ(x / d, y / d, z / d);
         }
     }
 
-    public static Vec3 xyz(double x, double y, double z) {
-        return x == 0 && y == 0 && z == 0 ? ORIGIN_3 : new XYZ(x, y, z);
+    public static Vec3 xyz(float x, float y, float z) {
+        return abs(x) < EPSILON && abs(y) < EPSILON && abs(z) < EPSILON ? ORIGIN_3 : new XYZ(x, y, z);
     }
 
     public static Vec3 xyz(Number x, Number y, Number z) {
-        return xyz(x.doubleValue(), y.doubleValue(), z.doubleValue());
+        return xyz(x.floatValue(), y.floatValue(), z.floatValue());
     }
 
     private static class Origin3 implements Vec3 {
-        public double x() {
+        public float x() {
             return 0;
         }
 
-        public double y() {
+        public float y() {
             return 0;
         }
 
-        public double z() {
+        public float z() {
             return 0;
         }
 
-        public double mag() {
+        public float mag() {
             return 0;
         }
 
-        public Vec3 mult(double factor) {
+        public Vec3 mult(float factor) {
             return this;
         }
 
-        public Vec3 div(double divisor) {
+        public Vec3 div(float divisor) {
             return this;
         }
 
@@ -957,31 +960,31 @@ public final class Geometry {
             return o.mult(-1);
         }
 
-        public Vec3 addX(double $) {
+        public Vec3 addX(float $) {
             return xyz($, 0, 0);
         }
 
-        public Vec3 addY(double $) {
+        public Vec3 addY(float $) {
             return xyz(0, $, 0);
         }
 
-        public Vec3 addZ(double $) {
+        public Vec3 addZ(float $) {
             return xyz(0, 0, $);
         }
 
-        public Vec3 subX(double $) {
+        public Vec3 subX(float $) {
             return xyz(-$, 0, 0);
         }
 
-        public Vec3 subY(double $) {
+        public Vec3 subY(float $) {
             return xyz(0, -$, 0);
         }
 
-        public Vec3 subZ(double $) {
+        public Vec3 subZ(float $) {
             return xyz(0, 0, -$);
         }
 
-        public Vec3 mag(double newMag) {
+        public Vec3 mag(float newMag) {
             throw new UnsupportedOperationException();
         }
 
@@ -997,7 +1000,7 @@ public final class Geometry {
             return this;
         }
 
-        public double dot(Vec3 o) {
+        public float dot(Vec3 o) {
             return 0;
         }
 
@@ -1006,7 +1009,7 @@ public final class Geometry {
         }
 
         public int compareTo(Vec3 o) {
-            return Double.compare(0, o.mag());
+            return Float.compare(0, o.mag());
         }
 
         public boolean isOrigin() {

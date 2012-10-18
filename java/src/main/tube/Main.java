@@ -8,6 +8,7 @@ import javax.media.opengl.*;
 import javax.media.opengl.glu.*;
 import java.nio.*;
 
+import static spray.Geometry.origin3;
 import static tube.Color.*;
 import static tube.Pt.*;
 import static tube.Vec.*;
@@ -145,9 +146,7 @@ public class Main extends PApplet {
     // sets the new focus point to wher ethe mous points to when the mouse-button is released
     public void keyReleased() {
         if (key == 't') {
-            L.x = T.x;
-            L.y = T.y;
-            L.z = T.z;
+            L.set(T);
         }
     }
 
@@ -161,9 +160,7 @@ public class Main extends PApplet {
             d = 300;
             b = 0;
             a = 0;
-            L.y = 0;
-            L.x = 0;
-            L.z = 0;
+            L.$ = origin3();
         }
 
         // reset the current frame to be defined by the mouse position and the screen orientation
@@ -259,10 +256,10 @@ public class Main extends PApplet {
         E.set(d * cb * ca, d * sa, d * sb * ca);
 
         // defines the view : eye, ctr, up
-        camera(E.x, E.y, E.z, L.x, L.y, L.z, 0.0f, 1.0f, 0.0f);
+        camera(E.$.x(), E.$.y(), E.$.z(), L.$.x(), L.$.y(), L.$.z(), 0.0f, 1.0f, 0.0f);
 
         // puts a white light above and to the left of the viewer
-        directionalLight(250, 250, 250, -E.x, -E.y + 100, -E.z);
+        directionalLight(250, 250, 250, -E.$.x(), -E.$.y() + 100, -E.$.z());
 
         // in case you want the light to be fixed in model space
         // ambientLight(100,100,0);
@@ -310,9 +307,9 @@ public class Main extends PApplet {
     void showModel() {
         pushMatrix();
         applyMatrix(
-            mI[m].x, mJ[m].x, mK[m].x, mQ[m].x,
-            mI[m].y, mJ[m].y, mK[m].y, mQ[m].y,
-            mI[m].z, mJ[m].z, mK[m].z, mQ[m].z,
+            mI[m].$.x(), mJ[m].$.x(), mK[m].$.x(), mQ[m].$.x(),
+            mI[m].$.y(), mJ[m].$.y(), mK[m].$.y(), mQ[m].$.y(),
+            mI[m].$.z(), mJ[m].$.z(), mK[m].$.z(), mQ[m].$.z(),
             0.0f, 0.0f, 0.0f, 1.0f);
 
         // replace this (showing the axes) with code for showing your second model
@@ -368,32 +365,46 @@ public class Main extends PApplet {
 
     // changes normal for smooth shading
     void normal(Vec V) {
-        normal(V.x, V.y, V.z);
+        normal(V.$.x(), V.$.y(), V.$.z());
     }
 
     // vertex for shading or drawing
     void v(Pt P) {
-        vertex(P.x, P.y, P.z);
+        vertex(P.$.x(), P.$.y(), P.$.z());
     }
 
     // vertex with texture coordinates
     void vTextured(Pt P, float u, float v) {
-        vertex(P.x, P.y, P.z, u, v);
+        vertex(P.$.x(), P.$.y(), P.$.z(), u, v);
     }
 
     // draws edge (P,Q)
     void show(Pt P, Pt Q) {
-        line(Q.x, Q.y, Q.z, P.x, P.y, P.z);
+        line(Q.$.x(), Q.$.y(), Q.$.z(), P.$.x(), P.$.y(), P.$.z());
     }
 
     // shows edge from P to P+V
     void show(Pt P, Vec V) {
-        line(P.x, P.y, P.z, P.x + V.x, P.y + V.y, P.z + V.z);
+        line(
+            P.$.x(),
+            P.$.y(),
+            P.$.z(),
+            P.$.x() + V.$.x(),
+            P.$.y() + V.$.y(),
+            P.$.z() + V.$.z()
+        );
     }
 
     // shows edge from P to P+dV
     void show(Pt P, float d, Vec V) {
-        line(P.x, P.y, P.z, P.x + d * V.x, P.y + d * V.y, P.z + d * V.z);
+        line(
+            P.$.x(),
+            P.$.y(),
+            P.$.z(),
+            P.$.x() + d * V.$.x(),
+            P.$.y() + d * V.$.y(),
+            P.$.z() + d * V.$.z()
+        );
     }
 
     // volume of tet
@@ -418,7 +429,7 @@ public class Main extends PApplet {
     // render sphere of radius r and center P
     void show(Pt P, float r) {
         pushMatrix();
-        translate(P.x, P.y, P.z);
+        translate(P.$.x(), P.$.y(), P.$.z());
         sphere(r);
         popMatrix();
     }
@@ -438,19 +449,24 @@ public class Main extends PApplet {
 
     // prints string s in 3D at P
     void show(Pt P, String s) {
-        text(s, P.x, P.y, P.z);
+        text(s, P.$.x(), P.$.y(), P.$.z());
     }
 
     // prints string s in 3D at P+D
     void show(Pt P, String s, Vec D) {
-        text(s, P.x + D.x, P.y + D.y, P.z + D.z);
+        text(s, P.$.x() + D.$.x(), P.$.y() + D.$.y(), P.$.z() + D.$.z());
     }
 
     // curve
 
     // draws a cubic Bezier curve with control points A, B, C, D
     void bezier(Pt A, Pt B, Pt C, Pt D) {
-        bezier(A.x, A.y, A.z, B.x, B.y, B.z, C.x, C.y, C.z, D.x, D.y, D.z);
+        bezier(
+            A.$.x(), A.$.y(), A.$.z(),
+            B.$.x(), B.$.y(), B.$.z(),
+            C.$.x(), C.$.y(), C.$.z(),
+            D.$.x(), D.$.y(), D.$.z()
+        );
     }
 
     // draws a cubic Bezier curve with control points A, B, C, D
@@ -460,17 +476,17 @@ public class Main extends PApplet {
 
     Pt bezierPoint(Pt[] C, float t) {
         return P(
-            bezierPoint(C[0].x, C[1].x, C[2].x, C[3].x, t),
-            bezierPoint(C[0].y, C[1].y, C[2].y, C[3].y, t),
-            bezierPoint(C[0].z, C[1].z, C[2].z, C[3].z, t)
+            bezierPoint(C[0].$.x(), C[1].$.x(), C[2].$.x(), C[3].$.x(), t),
+            bezierPoint(C[0].$.y(), C[1].$.y(), C[2].$.y(), C[3].$.y(), t),
+            bezierPoint(C[0].$.z(), C[1].$.z(), C[2].$.z(), C[3].$.z(), t)
         );
     }
 
     Vec bezierTangent(Pt[] C, float t) {
         return V(
-            bezierTangent(C[0].x, C[1].x, C[2].x, C[3].x, t),
-            bezierTangent(C[0].y, C[1].y, C[2].y, C[3].y, t),
-            bezierTangent(C[0].z, C[1].z, C[2].z, C[3].z, t)
+            bezierTangent(C[0].$.x(), C[1].$.x(), C[2].$.x(), C[3].$.x(), t),
+            bezierTangent(C[0].$.y(), C[1].$.y(), C[2].$.y(), C[3].$.y(), t),
+            bezierTangent(C[0].$.z(), C[1].$.z(), C[2].$.z(), C[3].$.z(), t)
         );
     }
 
@@ -491,9 +507,9 @@ public class Main extends PApplet {
 
     Vec vecToCubic(Pt A, Pt B, Pt C, Pt D, Pt E) {
         return V(
-            (-A.x + 4 * B.x - 6 * C.x + 4 * D.x - E.x) / 6,
-            (-A.y + 4 * B.y - 6 * C.y + 4 * D.y - E.y) / 6,
-            (-A.z + 4 * B.z - 6 * C.z + 4 * D.z - E.z) / 6
+            (-A.$.x() + 4 * B.$.x() - 6 * C.$.x() + 4 * D.$.x() - E.$.x()) / 6,
+            (-A.$.y() + 4 * B.$.y() - 6 * C.$.y() + 4 * D.$.y() - E.$.y()) / 6,
+            (-A.$.z() + 4 * B.$.z() - 6 * C.$.z() + 4 * D.$.z() - E.$.z()) / 6
         );
     }
 
@@ -504,14 +520,14 @@ public class Main extends PApplet {
 
     // returns angle in 2D dragged by the mouse around the screen projection of G
     float angleDraggedAround(Pt G) {
-        Pt S = P(screenX(G.x, G.y, G.z), screenY(G.x, G.y, G.z), 0);
+        Pt S = P(screenX(G.$.x(), G.$.y(), G.$.z()), screenY(G.$.x(), G.$.y(), G.$.z()), 0);
         Vec T = V(S, Pmouse());
         Vec U = V(S, Mouse());
         return atan2(d(R(U), T), d(U, T));
     }
 
     float scaleDraggedFrom(Pt G) {
-        Pt S = P(screenX(G.x, G.y, G.z), screenY(G.x, G.y, G.z), 0);
+        Pt S = P(screenX(G.$.x(), G.$.y(), G.$.z()), screenY(G.$.x(), G.$.y(), G.$.z()), 0);
         return d(S, Mouse()) / d(S, Pmouse());
     }
 

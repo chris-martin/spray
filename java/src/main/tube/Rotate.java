@@ -11,7 +11,7 @@ public class Rotate {
 
     // rotated 90 degrees in XY plane
     public static Vec R(Vec V) {
-        return V(-V.y, V.x, V.z);
+        return V(-V.$.y(), V.$.x(), V.$.z());
     }
 
     // Rotated P by a around G in plane (I,J)

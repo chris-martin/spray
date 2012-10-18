@@ -1,96 +1,50 @@
 package tube;
 
+import spray.Geometry.Vec3;
+
 import static processing.core.PApplet.*;
 
+import static spray.Geometry.*;
 import static tube.Measures.*;
 
 // vector
 public class Vec {
 
-    public float x, y, z;
+    public Vec3 $ = origin3();
 
     public Vec() {
     }
 
-    public Vec(float px, float py, float pz) {
-        x = px;
-        y = py;
-        z = pz;
+    public Vec(Vec3 $) {
+        this.$ = $;
+    }
+
+    public Vec(double px, double py, double pz) {
+        $ = xyz(px, py, pz);
     }
 
     public Vec set(float px, float py, float pz) {
-        x = px;
-        y = py;
-        z = pz;
+        $ = xyz(px, py, pz);
         return this;
     }
 
     public Vec set(Vec V) {
-        x = V.x;
-        y = V.y;
-        z = V.z;
-        return this;
-    }
-
-    public Vec add(Vec V) {
-        x += V.x;
-        y += V.y;
-        z += V.z;
+        $ = V.$;
         return this;
     }
 
     public Vec add(float s, Vec V) {
-        x += s * V.x;
-        y += s * V.y;
-        z += s * V.z;
-        return this;
-    }
-
-    public Vec sub(Vec V) {
-        x -= V.x;
-        y -= V.y;
-        z -= V.z;
-        return this;
-    }
-
-    public Vec mul(float f) {
-        x *= f;
-        y *= f;
-        z *= f;
+        $ = $.add(V.$.mult(s));
         return this;
     }
 
     public Vec div(float f) {
-        x /= f;
-        y /= f;
-        z /= f;
-        return this;
-    }
-
-    public Vec div(int f) {
-        x /= f;
-        y /= f;
-        z /= f;
-        return this;
-    }
-
-    public Vec rev() {
-        x = -x;
-        y = -y;
-        z = -z;
+        $ = $.div(f);
         return this;
     }
 
     public float norm() {
-        return (sqrt(sq(x) + sq(y) + sq(z)));
-    }
-
-    public Vec normalize() {
-        float n = norm();
-        if (n > 0.000001) {
-            div(n);
-        }
-        return this;
+        return (float) $.mag();
     }
 
     // Rotate by a parallel to plane (I,J)
@@ -108,53 +62,38 @@ public class Vec {
     }
 
     // make vector (x,y,z)
-    static Vec V(float x, float y, float z) {
+    static Vec V(double x, double y, double z) {
         return new Vec(x, y, z);
     }
 
     // make copy of vector V
     static Vec V(Vec V) {
-        return new Vec(V.x, V.y, V.z);
+        return new Vec(V.$);
     }
 
     // A+B
     static Vec A(Vec A, Vec B) {
-        return new Vec(A.x + B.x, A.y + B.y, A.z + B.z);
+        return new Vec(A.$.add(B.$));
     }
 
     // U+sV
     static Vec A(Vec U, float s, Vec V) {
-        return V(U.x + s * V.x, U.y + s * V.y, U.z + s * V.z);
+        return new Vec(U.$.add(V.$.mult(s)));
     }
 
     // U-V
     static Vec M(Vec U, Vec V) {
-        return V(U.x - V.x, U.y - V.y, U.z - V.z);
+        return new Vec(U.$.sub(V.$));
     }
 
     // (A+B)/2
     static Vec V(Vec A, Vec B) {
-        return new Vec((A.x + B.x) / 2.0f, (A.y + B.y) / 2.0f, (A.z + B.z) / 2.0f);
-    }
-
-    // (1-s)A+sB
-    static Vec V(Vec A, float s, Vec B) {
-        return new Vec(A.x + s * (B.x - A.x), A.y + s * (B.y - A.y), A.z + s * (B.z - A.z));
-    }
-
-    // (A+B+C)/3
-    static Vec V(Vec A, Vec B, Vec C) {
-        return new Vec((A.x + B.x + C.x) / 3.0f, (A.y + B.y + C.y) / 3.0f, (A.z + B.z + C.z) / 3.0f);
-    }
-
-    // (A+B+C+D)/4
-    static Vec V(Vec A, Vec B, Vec C, Vec D) {
-        return V(V(A, B), V(C, D));
+        return new Vec(A.$.add(B.$).div(2));
     }
 
     // sA
     static Vec V(float s, Vec A) {
-        return new Vec(s * A.x, s * A.y, s * A.z);
+        return new Vec(A.$.mult(s));
     }
 
     // aA+bB
@@ -169,7 +108,7 @@ public class Vec {
 
     // PQ
     static Vec V(Pt P, Pt Q) {
-        return new Vec(Q.x - P.x, Q.y - P.y, Q.z - P.z);
+        return new Vec(Q.$.sub(P.$));
     }
 
     // V/||V||
@@ -181,7 +120,7 @@ public class Vec {
 
     // UxV cross product (normal to both)
     static Vec N(Vec U, Vec V) {
-        return V(U.y * V.z - U.z * V.y, U.z * V.x - U.x * V.z, U.x * V.y - U.y * V.x);
+        return new Vec(U.$.cross(V.$));
     }
 
     // normal to triangle (A,B,C), not normalized (proportional to area)

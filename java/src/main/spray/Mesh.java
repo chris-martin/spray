@@ -45,9 +45,9 @@ public final class Mesh {
         return unmodifiableCollection(vertices);
     }
 
-    private LoadingCache<Edge, Double> springLength = CacheBuilder.newBuilder().build(
-        new CacheLoader<Edge, Double>() {
-            public Double load(Edge edge) {
+    private LoadingCache<Edge, Float> springLength = CacheBuilder.newBuilder().build(
+        new CacheLoader<Edge, Float>() {
+            public Float load(Edge edge) {
                 return edge.a.loc.sub(edge.b.loc).mag();
             }
         });
@@ -59,10 +59,10 @@ public final class Mesh {
         setPoints(points);
     }
 
-    private static final double GRAVITY = 0.04;
-    private static final double SPRING = .05;
-    private static final double INERTIA = 12;
-    private static final double DAMPING = .001;
+    private static final float GRAVITY = 0.04f;
+    private static final float SPRING = .05f;
+    private static final float INERTIA = 12f;
+    private static final float DAMPING = .001f;
 
     private boolean meshIsValid() {
         for (Vertex v : vertices) {
@@ -90,7 +90,7 @@ public final class Mesh {
         return edges;
     }
 
-    public void physics(double timeStep) {
+    public void physics(float timeStep) {
         for (Vertex v : vertices) {
             v.nextVelocity = v.velocity;
         }
@@ -103,9 +103,9 @@ public final class Mesh {
                     for (Corner c : v.corners()) adjs.add(c.next().vertex());
                     Collections.shuffle(adjs);
                     for (Vertex adj : adjs) {
-                        double desiredLength = springLength.getUnchecked(new Edge(v, adj));
-                        double actualLength = adj.nextPosition(timeStep).sub(v.nextPosition(timeStep)).mag();
-                        double stretch = actualLength - desiredLength;
+                        float desiredLength = springLength.getUnchecked(new Edge(v, adj));
+                        float actualLength = adj.nextPosition(timeStep).sub(v.nextPosition(timeStep)).mag();
+                        float stretch = actualLength - desiredLength;
                         accel = accel.add(adj.loc.sub(v.loc).mag(stretch * SPRING));
                     }
                     v.nextVelocity = v.velocity.mult(INERTIA - 1).add(accel).div(INERTIA);
@@ -178,7 +178,7 @@ public final class Mesh {
 
         final Vertex nv = new Vertex(new VertexConfig(intersect(cut, e.line()), VertexPhysics.FREE));
         vertices.add(nv);
-        double springFraction = e.a.loc.sub(nv.loc).mag() / e.a.loc.sub(e.b.loc).mag();
+        float springFraction = e.a.loc.sub(nv.loc).mag() / e.a.loc.sub(e.b.loc).mag();
         springLength.put(new Edge(e.a, nv), springLength.getUnchecked(new Edge(e.a, e.b)) * springFraction);
         springLength.put(new Edge(e.b, nv), springLength.getUnchecked(new Edge(e.a, e.b)) * (1 - springFraction));
 
@@ -337,7 +337,7 @@ public final class Mesh {
 
         private Vec2 velocity = origin2(), nextVelocity;
 
-        Vec2 nextPosition(double timeStep) {
+        Vec2 nextPosition(float timeStep) {
             return nextVelocity.mult(timeStep).add(loc);
         }
 
@@ -605,10 +605,10 @@ public final class Mesh {
         void calculateConvexHull() {
             final Vertex start = min(vertices, new Comparator<Vertex>() {
                 public int compare(Vertex i, Vertex j) {
-                    return Double.compare(key(i), key(j));
+                    return Float.compare(key(i), key(j));
                 }
 
-                double key(Vertex v) {
+                float key(Vertex v) {
                     return v.loc().y();
                 }
             });
@@ -617,11 +617,11 @@ public final class Mesh {
                 final Vertex a$ = a;
                 Vertex b = min(vertices, new Comparator<Vertex>() {
                     public int compare(Vertex i, Vertex j) {
-                        return Double.compare(key(i), key(j));
+                        return Float.compare(key(i), key(j));
                     }
 
-                    double key(Vertex v) {
-                        return v == a$ ? Double.MAX_VALUE : (v.loc().sub(a$.loc())).ang();
+                    float key(Vertex v) {
+                        return v == a$ ? Float.MAX_VALUE : (v.loc().sub(a$.loc())).ang();
                     }
                 });
                 convexHull.add(new Edge(a, b));
@@ -657,8 +657,8 @@ public final class Mesh {
                 });
             }
             if (!candidateVertices.iterator().hasNext()) return;
-            final Vertex v = Ordering.natural().onResultOf(new Function<Vertex, Double>() {
-                public Double apply(Vertex v) {
+            final Vertex v = Ordering.natural().onResultOf(new Function<Vertex, Float>() {
+                public Float apply(Vertex v) {
                     return line.bulge(v.loc());
                 }
             }).min(candidateVertices);
@@ -668,7 +668,7 @@ public final class Mesh {
                 // vertices are sorted in clockwise rotation about the circumcenter
                 final Vec2 cc = circle(tv[0].loc(), tv[1].loc(), tv[2].loc()).center();
                 class X {
-                    final double ang;
+                    final float ang;
                     final Vertex v;
 
                     X(Vertex v) {
@@ -679,7 +679,7 @@ public final class Mesh {
                 X[] xs = {new X(tv[0]), new X(tv[1]), new X(tv[2])};
                 Arrays.sort(xs, new Comparator<X>() {
                     public int compare(X a, X b) {
-                        return Double.compare(a.ang, b.ang);
+                        return Float.compare(a.ang, b.ang);
                     }
                 });
                 t = new Triangle(xs[0].v, xs[1].v, xs[2].v);
