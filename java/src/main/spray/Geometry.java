@@ -321,7 +321,7 @@ public final class Geometry {
         }
 
         public float ang() {
-            throw new UnsupportedOperationException();
+            return 0;
         }
 
         public float mag() {
@@ -369,11 +369,11 @@ public final class Geometry {
         }
 
         public Vec2 mag(float newMag) {
-            throw new UnsupportedOperationException();
+            return this;
         }
 
         public Vec2 unit() {
-            throw new UnsupportedOperationException();
+            return this;
         }
 
         public Vec2 mult(Number factor) {
@@ -985,11 +985,11 @@ public final class Geometry {
         }
 
         public Vec3 mag(float newMag) {
-            throw new UnsupportedOperationException();
+            return this;
         }
 
         public Vec3 unit() {
-            throw new UnsupportedOperationException();
+            return this;
         }
 
         public Vec3 mult(Number factor) {
@@ -1021,6 +1021,14 @@ public final class Geometry {
 
     public static Vec3 origin3() {
         return ORIGIN_3;
+    }
+
+    public static float distance(Vec2 a, Vec2 b) {
+        return a.sub(b).mag();
+    }
+
+    public static float distance(Vec3 a, Vec3 b) {
+        return a.sub(b).mag();
     }
 
 }

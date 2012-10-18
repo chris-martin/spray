@@ -1,14 +1,15 @@
 package tube;
 
 import processing.core.PApplet;
-
 import processing.opengl.*;
+
 import spray.Geometry.Vec3;
 
 import javax.media.opengl.*;
 import javax.media.opengl.glu.*;
 import java.nio.*;
 
+import static spray.Geometry.distance;
 import static spray.Geometry.origin3;
 import static spray.Geometry.xyz;
 import static tube.Color.*;
@@ -63,29 +64,29 @@ public class Main extends PApplet {
 
         // sets Q to the picked surface-point and {I,J,K} to screen aligned vectors
         if (keyPressed && key == 'q') {
-            SetFrameFromPick(Q, I, J, K);
+            SetFrameFromPick();
         }
 
         // the following 2 actions set frame (1 or 2) and edit its origin as the mouse is dragged
         if (keyPressed && key == '1') {
             m = 1;
-            SetFrameFromPick(Q, I, J, K);
-            mQ[m].set(Q);
+            SetFrameFromPick();
+            mQ[m] = Q;
             if (first[m]) {
-                mI[m].set(I);
-                mJ[m].set(J);
-                mK[m].set(K);
+                mI[m] = I;
+                mJ[m] = J;
+                mK[m] = K;
                 first[m] = false;
             }
         }
         if (keyPressed && key == '2') {
             m = 2;
-            SetFrameFromPick(Q, I, J, K);
-            mQ[m].set(Q);
+            SetFrameFromPick();
+            mQ[m] = Q;
             if (first[m]) {
-                mI[m].set(I);
-                mJ[m].set(J);
-                mK[m].set(K);
+                mI[m] = I;
+                mJ[m] = J;
+                mK[m] = K;
                 first[m] = false;
             }
         }
@@ -104,9 +105,9 @@ public class Main extends PApplet {
 
         // shows origin of frame 1 and 2 as a small red or green ball
         fill(red);
-        show(mQ[1].$, 3);
+        show(mQ[1], 3);
         fill(green);
-        show(mQ[2].$, 3);
+        show(mQ[2], 3);
 
         if (m == 1) {
             fill(red);
@@ -117,11 +118,11 @@ public class Main extends PApplet {
         }
 
         // shows origin of selected frame (R,G,B) for (1,2,0) as a bigger ball
-        show(mQ[m].$, 5);
+        show(mQ[m], 5);
 
         // shows current point on surface. Changed when 'q' is pressed
         fill(yellow);
-        show(Q.$, 2);
+        show(Q, 2);
 
         // shows second model (currently axes)
         noStroke();
@@ -167,10 +168,10 @@ public class Main extends PApplet {
 
         // reset the current frame to be defined by the mouse position and the screen orientation
         if (key == 'h') {
-            mQ[m].set(Q);
-            mI[m].set(I);
-            mJ[m].set(J);
-            mK[m].set(K);
+            mQ[m] = Q;
+            mI[m] = I;
+            mJ[m] = J;
+            mK[m] = K;
         }
     }
 
@@ -182,10 +183,10 @@ public class Main extends PApplet {
     // eye and lookAt
     Vec3 E = origin3(), L = origin3();
 
-    Pt[] mQ = new Pt[3];
+    Vec3[] mQ = new Vec3[3];
 
     // three local frames {Q,I,J,K}
-    Vec[] mI = new Vec[3], mJ = new Vec[3], mK = new Vec[3];
+    Vec3[] mI = new Vec3[3], mJ = new Vec3[3], mK = new Vec3[3];
 
     // which frame is being shown / edited
     int m = 1;
@@ -199,16 +200,16 @@ public class Main extends PApplet {
     Boolean[] first = {true, true, true};
 
     // picked surface point Q and screen aligned vectors {I,J,K} set when picked
-    Pt Q = P();
-    Vec I = V(), J = V(), K = V();
+    Vec3 Q = origin3();
+    Vec3 I = origin3(), J = origin3(), K = origin3();
 
     // declares the local frames
     void initm() {
         for (int i = 0; i < 3; i++) {
-            mQ[i] = P();
-            mI[i] = V();
-            mJ[i] = V();
-            mK[i] = V();
+            mQ[i] = origin3();
+            mI[i] = origin3();
+            mJ[i] = origin3();
+            mK[i] = origin3();
         }
     }
 
@@ -219,12 +220,12 @@ public class Main extends PApplet {
 
         // moves the selected frame parallel to the screen
         if (keyPressed && key == 'x') {
-            mQ[m].add(mouseX - pmouseX, I).add(pmouseY - mouseY, J);
+            mQ[m] = mQ[m].add(I.mult(mouseX - pmouseX)).add(J.mult(pmouseY - mouseY));
         }
 
         // moves the selected frame on th ehorizontal plane
         if (keyPressed && key == 'z') {
-            mQ[m].add(mouseX - pmouseX, I).add(mouseY - pmouseY, K);
+            mQ[m] = mQ[m].add(I).mult(mouseX - pmouseX).add(K.mult(mouseY - pmouseY));
         }
 
         // changes distance form the target to the viewpoint
@@ -235,23 +236,23 @@ public class Main extends PApplet {
         // rotates current frame parallel to the screen
         if (keyPressed && key == 'a') {
             float a = (float) (-mouseY + pmouseY + mouseX - pmouseX) / width;
-            mI[m].rotate(a, I, J);
-            mJ[m].rotate(a, I, J);
-            mK[m].rotate(a, I, J);
+            mI[m] = R(mI[m], a, I, J);
+            mJ[m] = R(mJ[m], a, I, J);
+            mK[m] = R(mK[m], a, I, J);
         }
 
         // rotates the current frames in pitch and yaw
         if (keyPressed && key == 'r') {
 
             float a = (float) (mouseY - pmouseY) / width;
-            mI[m].rotate(a, J, K);
-            mJ[m].rotate(a, J, K);
-            mK[m].rotate(a, J, K);
+            mI[m] = R(mI[m], a, J, K);
+            mJ[m] = R(mJ[m], a, J, K);
+            mK[m] = R(mK[m], a, J, K);
 
             float b = (float) (pmouseX - mouseX) / width;
-            mI[m].rotate(b, I, K);
-            mJ[m].rotate(b, I, K);
-            mK[m].rotate(b, I, K);
+            mI[m] = R(mI[m], b, I, K);
+            mJ[m] = R(mJ[m], b, I, K);
+            mK[m] = R(mK[m], b, I, K);
         }
 
         // sets the eye
@@ -269,19 +270,20 @@ public class Main extends PApplet {
         // directionalLight(100, 100, 250, 10, -20, -5);
     }
 
-    // sets Q where the mouse points to and I, J, K to be aligned with the screen (I right, J up, K towards thre viewer)
-    void SetFrameFromPick(Pt Q, Vec I, Vec J, Vec K) {
+    // sets Q where the mouse points to and I, J, K to be aligned with the screen
+    // (I right, J up, K towards the viewer)
+    // Pt Q, Vec I, Vec J, Vec K
+    void SetFrameFromPick() {
         glu = ((PGraphicsOpenGL) g).glu;
         PGraphicsOpenGL pgl = (PGraphicsOpenGL) g;
         float modelviewm[] = new float[16];
         gl = pgl.beginGL();
         gl.glGetFloatv(GL.GL_MODELVIEW_MATRIX, modelviewm, 0);
         pgl.endGL();
-        Q.set(Pick());
-        I.set(modelviewm[0], modelviewm[4], modelviewm[8]);
-        J.set(modelviewm[1], modelviewm[5], modelviewm[9]);
-        K.set(modelviewm[2], modelviewm[6], modelviewm[10]);
-        // println(I.x+","+I.y+","+I.z);
+        Q = Pick().$;
+        I = xyz(modelviewm[0], modelviewm[4], modelviewm[8]);
+        J = xyz(modelviewm[1], modelviewm[5], modelviewm[9]);
+        K = xyz(modelviewm[2], modelviewm[6], modelviewm[10]);
     }
 
     Pt Pick() {
@@ -309,9 +311,9 @@ public class Main extends PApplet {
     void showModel() {
         pushMatrix();
         applyMatrix(
-            mI[m].$.x(), mJ[m].$.x(), mK[m].$.x(), mQ[m].$.x(),
-            mI[m].$.y(), mJ[m].$.y(), mK[m].$.y(), mQ[m].$.y(),
-            mI[m].$.z(), mJ[m].$.z(), mK[m].$.z(), mQ[m].$.z(),
+            mI[m].x(), mJ[m].x(), mK[m].x(), mQ[m].x(),
+            mI[m].y(), mJ[m].y(), mK[m].y(), mQ[m].y(),
+            mI[m].z(), mJ[m].z(), mK[m].z(), mQ[m].z(),
             0.0f, 0.0f, 0.0f, 1.0f);
 
         // replace this (showing the axes) with code for showing your second model
@@ -398,14 +400,14 @@ public class Main extends PApplet {
     }
 
     // shows edge from P to P+dV
-    void show(Pt P, float d, Vec V) {
+    void showEdgeByPointAndOffset(Vec3 P, float d, Vec3 V) {
         line(
-            P.$.x(),
-            P.$.y(),
-            P.$.z(),
-            P.$.x() + d * V.$.x(),
-            P.$.y() + d * V.$.y(),
-            P.$.z() + d * V.$.z()
+            P.x(),
+            P.y(),
+            P.z(),
+            P.x() + d * V.x(),
+            P.y() + d * V.y(),
+            P.z() + d * V.z()
         );
     }
 
@@ -437,16 +439,17 @@ public class Main extends PApplet {
     }
 
     // render sphere of radius r and center P
-    void show(Pt P, float s, Vec I, Vec J, Vec K) {
+    // Pt P, float s, Vec I, Vec J, Vec K
+    void show(Vec3 P, float s, Vec3 I, Vec3 J, Vec3 K) {
         noStroke();
         fill(yellow);
-        show(P.$, 5);
+        show(P, 5);
         stroke(red);
-        show(P, s, I);
+        showEdgeByPointAndOffset(P, s, I);
         stroke(green);
-        show(P, s, J);
+        showEdgeByPointAndOffset(P, s, J);
         stroke(blue);
-        show(P, s, K);
+        showEdgeByPointAndOffset(P, s, K);
     }
 
     // prints string s in 3D at P
@@ -462,56 +465,63 @@ public class Main extends PApplet {
     // curve
 
     // draws a cubic Bezier curve with control points A, B, C, D
-    void bezier(Pt A, Pt B, Pt C, Pt D) {
+    void bezier(Vec3 A, Vec3 B, Vec3 C, Vec3 D) {
         bezier(
-            A.$.x(), A.$.y(), A.$.z(),
-            B.$.x(), B.$.y(), B.$.z(),
-            C.$.x(), C.$.y(), C.$.z(),
-            D.$.x(), D.$.y(), D.$.z()
+            A.x(), A.y(), A.z(),
+            B.x(), B.y(), B.z(),
+            C.x(), C.y(), C.z(),
+            D.x(), D.y(), D.z()
         );
     }
 
     // draws a cubic Bezier curve with control points A, B, C, D
-    void bezier(Pt[] C) {
+    void bezier(Vec3[] C) {
         bezier(C[0], C[1], C[2], C[3]);
     }
 
-    Pt bezierPoint(Pt[] C, float t) {
+    Pt bezierPoint(Vec3[] C, float t) {
         return P(
-            bezierPoint(C[0].$.x(), C[1].$.x(), C[2].$.x(), C[3].$.x(), t),
-            bezierPoint(C[0].$.y(), C[1].$.y(), C[2].$.y(), C[3].$.y(), t),
-            bezierPoint(C[0].$.z(), C[1].$.z(), C[2].$.z(), C[3].$.z(), t)
+            bezierPoint(C[0].x(), C[1].x(), C[2].x(), C[3].x(), t),
+            bezierPoint(C[0].y(), C[1].y(), C[2].y(), C[3].y(), t),
+            bezierPoint(C[0].z(), C[1].z(), C[2].z(), C[3].z(), t)
         );
     }
 
-    Vec bezierTangent(Pt[] C, float t) {
+    Vec bezierTangent(Vec3[] C, float t) {
         return V(
-            bezierTangent(C[0].$.x(), C[1].$.x(), C[2].$.x(), C[3].$.x(), t),
-            bezierTangent(C[0].$.y(), C[1].$.y(), C[2].$.y(), C[3].$.y(), t),
-            bezierTangent(C[0].$.z(), C[1].$.z(), C[2].$.z(), C[3].$.z(), t)
+            bezierTangent(C[0].x(), C[1].x(), C[2].x(), C[3].x(), t),
+            bezierTangent(C[0].y(), C[1].y(), C[2].y(), C[3].y(), t),
+            bezierTangent(C[0].z(), C[1].z(), C[2].z(), C[3].z(), t)
         );
     }
 
     // draws cubic Bezier interpolating (P0,T0) and (P1,T1)
-    void PT(Pt P0, Vec T0, Pt P1, Vec T1) {
-        float d = d(P0, P1) / 3;
-        bezier(P0, P(P0, -d, U(T0)), P(P1, -d, U(T1)), P1);
+    // Pt P0, Vec T0, Pt P1, Vec T1
+    void PT(Vec3 P0, Vec3 T0, Vec3 P1, Vec3 T1) {
+        float d = distance(P0, P1) / 3;
+        bezier(
+            P0,
+            P0.sub(T0.mag(d)),
+            P1.sub(T1.mag(d)),
+            P1
+        );
     }
 
     // draws cubic Bezier interpolating (P0,T0) and (P1,T1)
-    void PTtoBezier(Pt P0, Vec T0, Pt P1, Vec T1, Pt[] C) {
-        float d = d(P0, P1) / 3;
-        C[0].set(P0);
-        C[1].set(P(P0, -d, U(T0)));
-        C[2].set(P(P1, -d, U(T1)));
-        C[3].set(P1);
+    // Pt P0, Vec T0, Pt P1, Vec T1, Pt[] C
+    void PTtoBezier(Vec3 P0, Vec3 T0, Vec3 P1, Vec3 T1, Vec3[] C) {
+        float d = distance(P0, P1) / 3;
+        C[0] = P0;
+        C[1] = P0.sub(T0.mag(d));
+        C[2] = P1.sub(T1.mag(d));
+        C[3] = P1;
     }
 
-    Vec vecToCubic(Pt A, Pt B, Pt C, Pt D, Pt E) {
+    Vec vecToCubic(Vec3 A, Vec3 B, Vec3 C, Vec3 D, Vec3 E) {
         return V(
-            (-A.$.x() + 4 * B.$.x() - 6 * C.$.x() + 4 * D.$.x() - E.$.x()) / 6,
-            (-A.$.y() + 4 * B.$.y() - 6 * C.$.y() + 4 * D.$.y() - E.$.y()) / 6,
-            (-A.$.z() + 4 * B.$.z() - 6 * C.$.z() + 4 * D.$.z() - E.$.z()) / 6
+            (-A.x() + 4 * B.x() - 6 * C.x() + 4 * D.x() - E.x()) / 6,
+            (-A.y() + 4 * B.y() - 6 * C.y() + 4 * D.y() - E.y()) / 6,
+            (-A.z() + 4 * B.z() - 6 * C.z() + 4 * D.z() - E.z()) / 6
         );
     }
 
@@ -521,23 +531,26 @@ public class Main extends PApplet {
     }
 
     // returns angle in 2D dragged by the mouse around the screen projection of G
-    float angleDraggedAround(Pt G) {
-        Pt S = P(screenX(G.$.x(), G.$.y(), G.$.z()), screenY(G.$.x(), G.$.y(), G.$.z()), 0);
+    float angleDraggedAround(Vec3 G) {
+        Pt S = P(screenX(G.x(), G.y(), G.z()), screenY(G.x(), G.y(), G.z()), 0);
         Vec T = V(S, Pmouse());
         Vec U = V(S, Mouse());
         return atan2(d(R(U), T), d(U, T));
     }
 
-    float scaleDraggedFrom(Pt G) {
-        Pt S = P(screenX(G.$.x(), G.$.y(), G.$.z()), screenY(G.$.x(), G.$.y(), G.$.z()), 0);
+    float scaleDraggedFrom(Vec3 G) {
+        Pt S = P(screenX(G.x(), G.y(), G.z()), screenY(G.x(), G.y(), G.z()), 0);
         return d(S, Mouse()) / d(S, Pmouse());
     }
 
     // TUBE
-    void showTube(Pt P0, Vec T0, Pt P1, Vec T1, int n) {
+    // Pt P0, Vec T0, Pt P1, Vec T1
+    void showTube(Vec3 P0, Vec3 T0, Vec3 P1, Vec3 T1, int n) {
 
-        Pt[] C = new Pt[4];
-        makePts(C);
+        Vec3[] C = new Vec3[4];
+        for (int i = 0; i < C.length; i++) {
+            C[i] = origin3();
+        }
 
         // shows an interpolating Bezier curve from frame 1 to frames 2
         // (tangents are defined by K vectors)
@@ -551,28 +564,23 @@ public class Main extends PApplet {
             Pt B = bezierPoint(C, t);
             Vec T = bezierTangent(C, t);
             stroke(magenta);
-            show(B, 0.1f, T);
+            showEdgeByPointAndOffset(B.$, 0.1f, T.$);
             noStroke();
             fill(brown);
             show(B.$, 1);
         }
     }
 
-    void showQuads(Pt P0, Vec T0, Vec N0, Pt P1, Vec T1, Vec N1, int n, int ne, float r, int col) {
+    // Pt P0, Vec T0, Vec N0, Pt P1, Vec T1, Vec N1
+    void showQuads(Vec3 P0, Vec3 T0, Vec3 N0, Vec3 P1, Vec3 T1, Vec3 N1, int n, int ne, float r, int col) {
 
-        Pt[] G = new Pt[4];
-        makePts(G);
+        Vec3[] G = new Vec3[4];
 
-        float d = d(P0, P1) / 3;
-        G[0].set(P(P0, d, U(T0)));
-        G[1].set(P(P0, -d, U(T0)));
-        G[2].set(P(P1, -d, U(T1)));
-        G[3].set(P(P1, d, U(T1)));
-
-        G[0].add(r, N0);
-        G[1].add(r, N0);
-        G[2].add(r, N1);
-        G[3].add(r, N1);
+        float d = distance(P0, P1) / 3;
+        G[0] = P0.add(T0.mag(d)).add(N0.mult(r));
+        G[1] = P0.sub(T0.mag(d)).add(N0.mult(r));
+        G[2] = P1.sub(T1.mag(d)).add(N1.mult(r));
+        G[3] = P1.add(T1.mag(d)).add(N1.mult(r));
 
         Pt[] C = new Pt[n];
         makePts(C);
