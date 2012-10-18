@@ -748,61 +748,64 @@ public final class Geometry {
      */
     public static interface Vec3 extends Comparable<Vec3> {
 
-        public float x();
+        float x();
 
-        public float y();
+        float y();
 
-        public float z();
+        float z();
 
-        public float mag();
+        float mag();
 
-        public float magSquared();
+        float magSquared();
 
-        public Vec3 mag(float newMag);
+        Vec3 mag(float newMag);
 
         /**
          * Equivalent to mag(1).
          */
-        public Vec3 unit();
+        Vec3 unit();
 
-        public Vec3 add(Vec3 o);
+        Vec3 add(Vec3 o);
 
-        public Vec3 sub(Vec3 o);
+        Vec3 sub(Vec3 o);
 
-        public Vec3 mult(float factor);
+        Vec3 mult(float factor);
 
-        public Vec3 mult(Number factor);
+        Vec3 mult(Number factor);
 
-        public Vec3 div(float divisor);
+        Vec3 div(float divisor);
 
-        public Vec3 div(Number divisor);
+        Vec3 div(Number divisor);
 
-        public Vec3 addX(float o);
+        Vec3 addX(float o);
 
-        public Vec3 addY(float o);
+        Vec3 addY(float o);
 
-        public Vec3 addZ(float o);
+        Vec3 addZ(float o);
 
-        public Vec3 subX(float o);
+        Vec3 subX(float o);
 
-        public Vec3 subY(float o);
+        Vec3 subY(float o);
 
-        public Vec3 subZ(float o);
+        Vec3 subZ(float o);
 
         /**
          * This is exactly (0, 0, 0).
          */
-        public boolean isOrigin();
+        boolean isOrigin();
 
         /**
          * Scalar (dot) product.
          */
-        public float dot(Vec3 o);
+        float dot(Vec3 o);
 
         /**
          * Cross product U X V, normal to both U and V.
          */
-        public Vec3 cross(Vec3 o);
+        Vec3 cross(Vec3 o);
+
+        /** Rotate 90 degrees in the XY plane. */
+        Vec3 rot90xy();
 
     }
 
@@ -927,6 +930,10 @@ public final class Geometry {
         public XYZ div(float d) {
             return new XYZ(x / d, y / d, z / d);
         }
+
+        public Vec3 rot90xy() {
+            return xyz(-1 * y, x, z);
+        }
     }
 
     public static Vec3 xyz(float x, float y, float z) {
@@ -1019,6 +1026,10 @@ public final class Geometry {
         }
 
         public Vec3 cross(Vec3 o) {
+            return this;
+        }
+
+        public Vec3 rot90xy() {
             return this;
         }
 

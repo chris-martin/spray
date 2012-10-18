@@ -11,8 +11,6 @@ import java.nio.*;
 
 import static spray.Geometry.*;
 import static tube.Color.*;
-import static tube.Pt.*;
-import static tube.Vec.*;
 import static tube.Measures.*;
 import static tube.Rotate.*;
 
@@ -57,7 +55,7 @@ public class Main extends PApplet {
         // sets the target point T where the mouse points.
         // The camera will turn toward's it when the 't' key is released
         if (keyPressed && key == 't') {
-            T = Pick().$;
+            T = Pick();
         }
 
         // sets Q to the picked surface-point and {I,J,K} to screen aligned vectors
@@ -278,13 +276,13 @@ public class Main extends PApplet {
         gl = pgl.beginGL();
         gl.glGetFloatv(GL.GL_MODELVIEW_MATRIX, modelviewm, 0);
         pgl.endGL();
-        Q = Pick().$;
+        Q = Pick();
         I = xyz(modelviewm[0], modelviewm[4], modelviewm[8]);
         J = xyz(modelviewm[1], modelviewm[5], modelviewm[9]);
         K = xyz(modelviewm[2], modelviewm[6], modelviewm[10]);
     }
 
-    Pt Pick() {
+    Vec3 Pick() {
         ((PGraphicsOpenGL) g).beginGL();
         int viewport[] = new int[4];
         double[] proj = new double[16];
@@ -300,7 +298,7 @@ public class Main extends PApplet {
             (double) mouseX, height - (double) mouseY, (double) fb.get(0),
             model, 0, proj, 0, viewport, 0, mousePosArr, 0);
         ((PGraphicsOpenGL) g).endGL();
-        return P((float) mousePosArr[0], (float) mousePosArr[1], (float) mousePosArr[2]);
+        return xyz((float) mousePosArr[0], (float) mousePosArr[1], (float) mousePosArr[2]);
     }
 
     // ********************** display utilities ****************************
@@ -350,17 +348,13 @@ public class Main extends PApplet {
     // mouse
 
     // current mouse location
-    Pt Mouse() {
-        return P(mouseX, mouseY, 0);
-    }
-
-    Pt Pmouse() {
-        return P(pmouseX, pmouseY, 0);
+    Vec3 Mouse() {
+        return xyz(mouseX, mouseY, 0);
     }
 
     // vector representing recent mouse displacement
-    Vec MouseDrag() {
-        return V(mouseX - pmouseX, mouseY - pmouseY, 0);
+    Vec3 MouseDrag() {
+        return xyz(mouseX - pmouseX, mouseY - pmouseY, 0);
     }
 
     // render
@@ -523,22 +517,24 @@ public class Main extends PApplet {
         );
     }
 
-    Vec3 vecToProp(Pt B, Pt C, Pt D) {
-        float cb = d(C, B), cd = d(C, D);
-        return V(C, P(B, cb / (cb + cd), D)).$;
+    Vec3 vecToProp(Vec3 B, Vec3 C, Vec3 D) {
+        float cb = distance(C, B), cd = distance(C, D);
+        float s = cb / (cb + cd);
+        Vec3 BD = aToB(B, D).ab();
+        return aToB(C, B.add(BD.mult(s))).ab();
     }
 
     // returns angle in 2D dragged by the mouse around the screen projection of G
     float angleDraggedAround(Vec3 G) {
-        Pt S = P(screenX(G.x(), G.y(), G.z()), screenY(G.x(), G.y(), G.z()), 0);
-        Vec T = V(S, Pmouse());
-        Vec U = V(S, Mouse());
-        return atan2(d(R(U), T), d(U, T));
+        Vec3 S = xyz(screenX(G.x(), G.y(), G.z()), screenY(G.x(), G.y(), G.z()), 0);
+        Vec3 T = aToB(S, Mouse()).ab();
+        Vec3 U = aToB(S, Mouse()).ab();
+        return atan2(U.rot90xy().dot(T), U.dot(T));
     }
 
     float scaleDraggedFrom(Vec3 G) {
-        Pt S = P(screenX(G.x(), G.y(), G.z()), screenY(G.x(), G.y(), G.z()), 0);
-        return d(S, Mouse()) / d(S, Pmouse());
+        Vec3 S = xyz(screenX(G.x(), G.y(), G.z()), screenY(G.x(), G.y(), G.z()), 0);
+        return S.dot(Mouse()) / S.dot(Mouse());
     }
 
     // TUBE
