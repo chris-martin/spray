@@ -4,7 +4,7 @@ import processing.core.PApplet;
 
 public class Color {
 
-    static int red, yellow, green, cyan, blue, magenta, dred, dyellow, dgreen, dcyan, dblue,
+    public static int red, yellow, green, cyan, blue, magenta, dred, dyellow, dgreen, dcyan, dblue,
         dmagenta, white, black, orange, grey, metal, dorange, brown, dbrown;
 
     static {
