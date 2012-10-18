@@ -10,6 +10,7 @@ import javax.media.opengl.glu.*;
 import java.nio.*;
 
 import static spray.Geometry.origin3;
+import static spray.Geometry.xyz;
 import static tube.Color.*;
 import static tube.Pt.*;
 import static tube.Vec.*;
@@ -147,7 +148,7 @@ public class Main extends PApplet {
     // sets the new focus point to wher ethe mous points to when the mouse-button is released
     public void keyReleased() {
         if (key == 't') {
-            L.set(T);
+            L = T;
         }
     }
 
@@ -161,7 +162,7 @@ public class Main extends PApplet {
             d = 300;
             b = 0;
             a = 0;
-            L.$ = origin3();
+            L = origin3();
         }
 
         // reset the current frame to be defined by the mouse position and the screen orientation
@@ -179,7 +180,7 @@ public class Main extends PApplet {
     Vec3 T = origin3();
 
     // eye and lookAt
-    Pt E = P(), L = P();
+    Vec3 E = origin3(), L = origin3();
 
     Pt[] mQ = new Pt[3];
 
@@ -254,13 +255,13 @@ public class Main extends PApplet {
         }
 
         // sets the eye
-        E.set(d * cb * ca, d * sa, d * sb * ca);
+        E = xyz(d * cb * ca, d * sa, d * sb * ca);
 
         // defines the view : eye, ctr, up
-        camera(E.$.x(), E.$.y(), E.$.z(), L.$.x(), L.$.y(), L.$.z(), 0.0f, 1.0f, 0.0f);
+        camera(E.x(), E.y(), E.z(), L.x(), L.y(), L.z(), 0.0f, 1.0f, 0.0f);
 
         // puts a white light above and to the left of the viewer
-        directionalLight(250, 250, 250, -E.$.x(), -E.$.y() + 100, -E.$.z());
+        directionalLight(250, 250, 250, -E.x(), -E.y() + 100, -E.z());
 
         // in case you want the light to be fixed in model space
         // ambientLight(100,100,0);
