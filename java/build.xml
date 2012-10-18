@@ -1,4 +1,4 @@
-<project name="Spray">
+<project name="Spray" default="run">
   <property environment="env"/>
   <property name="debug.level" value="source,lines,vars"/>
   <property name="target" value="1.6"/>
@@ -47,7 +47,7 @@
   </target>
 
   <target name="run" depends="build">
-    <java fork="true" classname="tube.Main" classpath="./build/classes:./lib/*">
+    <java fork="true" classname="${p}.Main" classpath="./build/classes:./lib/*">
       <jvmarg value="-Djava.library.path=./lib/${os.name} ${sun.arch.data.model}"/>
     </java>
   </target>
