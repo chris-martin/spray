@@ -7,6 +7,9 @@ import javax.media.opengl.*;
 import javax.media.opengl.glu.*;
 import java.nio.*;
 
+import static tube.pt.*;
+import static tube.vec.*;
+
 //*********************************************************************
 //**      3D viewer with camera control and surface picking          **
 //**              Jarek Rossignac, October 2010                      **
@@ -320,125 +323,6 @@ public class Main extends PApplet {
   //**              Jarek Rossignac, October 2010                      **
   //**                                                                 **
   //*********************************************************************
-
-  // ===== make vector functions
-
-  // make vector (x,y,z)
-  static vec V() {return new vec(); }
-
-  // make vector (x,y,z)
-  static vec V(float x, float y, float z) {return new vec(x,y,z); }
-
-  // make copy of vector V
-  static vec V(vec V) {return new vec(V.x,V.y,V.z); }
-
-  // A+B
-  static vec A(vec A, vec B) {return new vec(A.x+B.x,A.y+B.y,A.z+B.z); }
-
-  // U+sV
-  static vec A(vec U, float s, vec V) {return V(U.x+s*V.x,U.y+s*V.y,U.z+s*V.z);}
-
-  // U-V
-  static vec M(vec U, vec V) {return V(U.x-V.x,U.y-V.y,U.z-V.z);}
-
-  // (A+B)/2
-  static vec V(vec A, vec B) {return new vec((A.x+B.x)/2.0f,(A.y+B.y)/2.0f,(A.z+B.z)/2.0f); }
-
-  // (1-s)A+sB
-  static vec V(vec A, float s, vec B) {return new vec(A.x+s*(B.x-A.x),A.y+s*(B.y-A.y),A.z+s*(B.z-A.z)); }
-
-  // (A+B+C)/3
-  static vec V(vec A, vec B, vec C) {return new vec((A.x+B.x+C.x)/3.0f,(A.y+B.y+C.y)/3.0f,(A.z+B.z+C.z)/3.0f); }
-
-  // (A+B+C+D)/4
-  static vec V(vec A, vec B, vec C, vec D) {return V(V(A,B),V(C,D)); }
-
-  // sA
-  static vec V(float s, vec A) {return new vec(s*A.x,s*A.y,s*A.z); }
-
-  // aA+bB
-  static vec V(float a, vec A, float b, vec B) {return A(V(a,A),V(b,B));}
-
-  // aA+bB+cC
-  static vec V(float a, vec A, float b, vec B, float c, vec C) {return A(V(a,A,b,B),V(c,C));}
-
-  // PQ
-  static vec V(pt P, pt Q) {return new vec(Q.x-P.x,Q.y-P.y,Q.z-P.z);}
-
-  // V/||V||
-  static vec U(vec V) {float n = V.norm(); if (n<0.000001) return V(0,0,0); else return V.div(n);}
-
-  // UxV cross product (normal to both)
-  static vec N(vec U, vec V) {return V( U.y*V.z-U.z*V.y, U.z*V.x-U.x*V.z, U.x*V.y-U.y*V.x); }
-
-  // normal to triangle (A,B,C), not normalized (proportional to area)
-  static vec N(pt A, pt B, pt C) {return N(V(A,B),V(A,C)); }
-
-  // (UxV)xV unit normal to U in the plane UV
-  static vec B(vec U, vec V) {return U(N(N(U,V),U)); }
-
-    // point functions
-
-  // point (x,y,z)
-  static pt P() {return new pt(); }
-
-  // point (x,y,z)
-  static pt P(float x, float y, float z) {return new pt(x,y,z); }
-
-  // copy of point P
-  static pt P(pt A) {return new pt(A.x,A.y,A.z); }
-
-  // A+sAB
-  static pt P(pt A, float s, pt B) {return new pt(A.x+s*(B.x-A.x),A.y+s*(B.y-A.y),A.z+s*(B.z-A.z)); }
-
-  // (A+B)/2
-  static pt P(pt A, pt B) {return P((A.x+B.x)/2.0f,(A.y+B.y)/2.0f,(A.z+B.z)/2.0f); }
-
-  // (A+B+C)/3
-  static pt P(pt A, pt B, pt C) {return new pt((A.x+B.x+C.x)/3.0f,(A.y+B.y+C.y)/3.0f,(A.z+B.z+C.z)/3.0f); }
-
-  // (A+B+C+D)/4
-  static pt P(pt A, pt B, pt C, pt D) {return P(P(A,B),P(C,D)); }
-
-  // sA
-  static pt P(float s, pt A) {return new pt(s*A.x,s*A.y,s*A.z); }
-
-  // A+B
-  static pt A(pt A, pt B) {return new pt(A.x+B.x,A.y+B.y,A.z+B.z); }
-
-  // aA+bB
-  static pt P(float a, pt A, float b, pt B) {return A(P(a,A),P(b,B));}
-
-  // aA+bB+cC
-  static pt P(float a, pt A, float b, pt B, float c, pt C) {
-    return A(P(a,A),P(b,B,c,C));
-  }
-
-  // aA+bB+cC+dD
-  static pt P(float a, pt A, float b, pt B, float c, pt C, float d, pt D){
-    return A(P(a,A,b,B),P(c,C,d,D));
-  }
-
-  // P+V
-  static pt P(pt P, vec V) {return new pt(P.x + V.x, P.y + V.y, P.z + V.z); }
-
-  // P+sV
-  static pt P(pt P, float s, vec V) {return new pt(P.x+s*V.x,P.y+s*V.y,P.z+s*V.z);}
-
-  // O+xI+yJ
-  static pt P(pt O, float x, vec I, float y, vec J) {
-    return P(O.x+x*I.x+y*J.x,O.y+x*I.y+y*J.y,O.z+x*I.z+y*J.z);
-  }
-
-  // O+xI+yJ+kZ
-  static pt P(pt O, float x, vec I, float y, vec J, float z, vec K) {
-    return P(O.x+x*I.x+y*J.x+z*K.x,O.y+x*I.y+y*J.y+z*K.y,O.z+x*I.z+y*J.z+z*K.z);
-  }
-
-  static void makePts(pt[] C) {
-    for(int i=0; i<C.length; i++) C[i]=P();
-  }
-
 
   // mouse
 
