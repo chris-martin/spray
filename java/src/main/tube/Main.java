@@ -377,29 +377,7 @@ public class Main extends PApplet {
   // (UxV)xV unit normal to U in the plane UV
   static vec B(vec U, vec V) {return U(N(N(U,V),U)); }
 
-  // ===== point class
-  static class pt {
-
-    float x, y, z;
-
-    pt () {}
-    pt (float px, float py, float pz) {x = px; y = py; z = pz; }
-
-    pt set (float px, float py, float pz) {x = px; y = py; z = pz; return this;}
-    pt set (pt P) {x = P.x; y = P.y; z = P.z; return this;}
-
-    pt add(pt P) {x+=P.x; y+=P.y; z+=P.z; return this;}
-    pt add(vec V) {x+=V.x; y+=V.y; z+=V.z; return this;}
-    pt add(float s, vec V) {x+=s*V.x; y+=s*V.y; z+=s*V.z; return this;}
-    pt sub(pt P) {x-=P.x; y-=P.y; z-=P.z; return this;}
-
-    pt mul(float f) {x*=f; y*=f; z*=f; return this;}
-    pt div(float f) {x/=f; y/=f; z/=f; return this;}
-    pt div(int f) {x/=f; y/=f; z/=f; return this;}
-
-  }
-
-  // point functions
+    // point functions
 
   // point (x,y,z)
   static pt P() {return new pt(); }

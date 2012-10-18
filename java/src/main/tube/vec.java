@@ -2,7 +2,7 @@ package tube;
 
 import static processing.core.PApplet.*;
 
-// vector class
+// vector
 public class vec {
 
     public float x, y, z;
