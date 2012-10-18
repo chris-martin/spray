@@ -7,8 +7,8 @@ import javax.media.opengl.*;
 import javax.media.opengl.glu.*;
 import java.nio.*;
 
-import static tube.pt.*;
-import static tube.vec.*;
+import static tube.Pt.*;
+import static tube.Vec.*;
 
 //*********************************************************************
 //**      3D viewer with camera control and surface picking          **
@@ -161,15 +161,15 @@ public class Main extends PApplet {
   // ************************ Graphic pick utilities *******************************
 
   // camera target point set with mouse when pressing 't'
-  pt T = P();
+  Pt T = P();
 
   // eye and lookAt
-  pt E = P(), L=P();
+  Pt E = P(), L=P();
 
-  pt[] mQ= new pt [3];
+  Pt[] mQ= new Pt[3];
 
   // three local frames {Q,I,J,K}
-  vec[] mI= new vec [3], mJ= new vec [3], mK= new vec [3];
+  Vec[] mI= new Vec[3], mJ= new Vec[3], mK= new Vec[3];
 
   // which frame is being shown / edited
   int m=1;
@@ -183,7 +183,7 @@ public class Main extends PApplet {
   Boolean [] first = {true, true, true};
 
   // picked surface point Q and screen aligned vectors {I,J,K} set when picked
-  pt Q=P(); vec I=V(), J=V(), K=V();
+  Pt Q=P(); Vec I=V(), J=V(), K=V();
 
   // declares the local frames
   void initm() {for(int i=0; i<3; i++) {mQ[i]=P(); mI[i]=V(); mJ[i]=V(); mK[i]=V(); }}
@@ -245,7 +245,7 @@ public class Main extends PApplet {
   }
 
   // sets Q where the mouse points to and I, J, K to be aligned with the screen (I right, J up, K towards thre viewer)
-  void SetFrameFromPick(pt Q, vec I, vec J, vec K) {
+  void SetFrameFromPick(Pt Q, Vec I, Vec J, Vec K) {
     glu = ((PGraphicsOpenGL) g).glu;
     PGraphicsOpenGL pgl = (PGraphicsOpenGL) g;
     float modelviewm[] = new float[16];
@@ -259,7 +259,7 @@ public class Main extends PApplet {
     // println(I.x+","+I.y+","+I.z);
   }
 
-  pt Pick() {
+  Pt Pick() {
     ((PGraphicsOpenGL)g).beginGL();
     int viewport[] = new int[4];
     double[] proj=new double[16];
@@ -327,65 +327,65 @@ public class Main extends PApplet {
   // mouse
 
   // current mouse location
-  pt Mouse() {return P(mouseX,mouseY,0);}
+  Pt Mouse() {return P(mouseX,mouseY,0);}
 
-  pt Pmouse() {return P(pmouseX,pmouseY,0);}
+  Pt Pmouse() {return P(pmouseX,pmouseY,0);}
 
   // vector representing recent mouse displacement
-  vec MouseDrag() {return V(mouseX-pmouseX,mouseY-pmouseY,0);}
+  Vec MouseDrag() {return V(mouseX-pmouseX,mouseY-pmouseY,0);}
 
   // measures
 
   //U*V dot product
-  static float d(vec U, vec V) {return U.x*V.x+U.y*V.y+U.z*V.z; }
+  static float d(Vec U, Vec V) {return U.x*V.x+U.y*V.y+U.z*V.z; }
 
   // (UxV)*W  mixed product, determinant
-  static float m(vec U, vec V, vec W) {return d(U,N(V,W)); }
+  static float m(Vec U, Vec V, Vec W) {return d(U,N(V,W)); }
 
   // det (EA EB EC) is >0 when E sees (A,B,C) clockwise
-  static float m(pt E, pt A, pt B, pt C) {return m(V(E,A),V(E,B),V(E,C));}
+  static float m(Pt E, Pt A, Pt B, Pt C) {return m(V(E,A),V(E,B),V(E,C));}
 
   // V*V    norm squared
-  static float n2(vec V) {return sq(V.x)+sq(V.y)+sq(V.z);}
+  static float n2(Vec V) {return sq(V.x)+sq(V.y)+sq(V.z);}
 
   // ||V||  norm
-  static float n(vec V) {return sqrt(n2(V));}
+  static float n(Vec V) {return sqrt(n2(V));}
 
   // ||AB|| distance
-  static float d(pt P, pt Q) {return sqrt(sq(Q.x-P.x)+sq(Q.y-P.y)+sq(Q.z-P.z)); }
+  static float d(Pt P, Pt Q) {return sqrt(sq(Q.x-P.x)+sq(Q.y-P.y)+sq(Q.z-P.z)); }
 
   // area of triangle
-  static float area(pt A, pt B, pt C) {return n(N(A,B,C))/2; }
+  static float area(Pt A, Pt B, Pt C) {return n(N(A,B,C))/2; }
 
   // volume of tet
-  static float volume(pt A, pt B, pt C, pt D) {return m(V(A,B),V(A,C),V(A,D))/6; }
+  static float volume(Pt A, Pt B, Pt C, Pt D) {return m(V(A,B),V(A,C),V(A,D))/6; }
 
   // true if U and V are almost parallel
-  static boolean parallel (vec U, vec V) {return n(N(U,V))<n(U)*n(V)*0.00001; }
+  static boolean parallel (Vec U, Vec V) {return n(N(U,V))<n(U)*n(V)*0.00001; }
 
   // angle(U,V)
-  static float angle(vec U, vec V) {return acos(d(U,V)/n(V)/n(U)); }
+  static float angle(Vec U, Vec V) {return acos(d(U,V)/n(V)/n(U)); }
 
   // (UxV)*W>0  U,V,W are clockwise
-  static boolean cw(vec U, vec V, vec W) {return m(U,V,W)>0; }
+  static boolean cw(Vec U, Vec V, Vec W) {return m(U,V,W)>0; }
 
   // tet is oriented so that A sees B, C, D clockwise
-  static boolean cw(pt A, pt B, pt C, pt D) {return volume(A,B,C,D)>0; }
+  static boolean cw(Pt A, Pt B, Pt C, Pt D) {return volume(A,B,C,D)>0; }
 
   // rotate
 
   // rotated 90 degrees in XY plane
-  static vec R(vec V) {return V(-V.y,V.x,V.z);}
+  static Vec R(Vec V) {return V(-V.y,V.x,V.z);}
 
   // Rotated P by a around G in plane (I,J)
-  static pt R(pt P, float a, vec I, vec J, pt G) {
+  static Pt R(Pt P, float a, Vec I, Vec J, Pt G) {
     float x=d(V(G,P),I), y=d(V(G,P),J);
     float c=cos(a), s=sin(a);
     return P(P,x*c-x-y*s,I,x*s+y*c-y,J);
   }
 
   // Rotated V by a parallel to plane (I,J)
-  static vec R(vec V, float a, vec I, vec J) {
+  static Vec R(Vec V, float a, Vec I, Vec J) {
     float x=d(V,I), y=d(V,J);
     float c=cos(a), s=sin(a);
     return A(V,V(x*c-x-y*s,I,x*s+y*c-y,J));
@@ -394,34 +394,34 @@ public class Main extends PApplet {
   // render
 
   // changes normal for smooth shading
-  void normal(vec V) {normal(V.x,V.y,V.z);}
+  void normal(Vec V) {normal(V.x,V.y,V.z);}
 
   // vertex for shading or drawing
-  void v(pt P) {vertex(P.x,P.y,P.z);}
+  void v(Pt P) {vertex(P.x,P.y,P.z);}
 
   // vertex with texture coordinates
-  void vTextured(pt P, float u, float v) {vertex(P.x,P.y,P.z,u,v);}
+  void vTextured(Pt P, float u, float v) {vertex(P.x,P.y,P.z,u,v);}
 
   // draws edge (P,Q)
-  void show(pt P, pt Q) {line(Q.x,Q.y,Q.z,P.x,P.y,P.z); }
+  void show(Pt P, Pt Q) {line(Q.x,Q.y,Q.z,P.x,P.y,P.z); }
 
   // shows edge from P to P+V
-  void show(pt P, vec V) {line(P.x,P.y,P.z,P.x+V.x,P.y+V.y,P.z+V.z); }
+  void show(Pt P, Vec V) {line(P.x,P.y,P.z,P.x+V.x,P.y+V.y,P.z+V.z); }
 
   // shows edge from P to P+dV
-  void show(pt P, float d, vec V) {line(P.x,P.y,P.z,P.x+d*V.x,P.y+d*V.y,P.z+d*V.z); }
+  void show(Pt P, float d, Vec V) {line(P.x,P.y,P.z,P.x+d*V.x,P.y+d*V.y,P.z+d*V.z); }
 
   // volume of tet
-  void show(pt A, pt B, pt C) {beginShape(); v(A);v(B); v(C); endShape(CLOSE);}
+  void show(Pt A, Pt B, Pt C) {beginShape(); v(A);v(B); v(C); endShape(CLOSE);}
 
   // volume of tet
-  void show(pt A, pt B, pt C, pt D) {beginShape(); v(A); v(B); v(C); v(D); endShape(CLOSE);}
+  void show(Pt A, Pt B, Pt C, Pt D) {beginShape(); v(A); v(B); v(C); v(D); endShape(CLOSE);}
 
   // render sphere of radius r and center P
-  void show(pt P, float r) {pushMatrix(); translate(P.x,P.y,P.z); sphere(r); popMatrix();}
+  void show(Pt P, float r) {pushMatrix(); translate(P.x,P.y,P.z); sphere(r); popMatrix();}
 
   // render sphere of radius r and center P
-  void show(pt P, float s, vec I, vec J, vec K) {
+  void show(Pt P, float s, Vec I, Vec J, Vec K) {
     noStroke();
     fill(yellow); show(P,5);
     stroke(red); show(P,s,I);
@@ -430,22 +430,22 @@ public class Main extends PApplet {
   }
 
   // prints string s in 3D at P
-  void show(pt P, String s) {text(s, P.x, P.y, P.z); }
+  void show(Pt P, String s) {text(s, P.x, P.y, P.z); }
 
   // prints string s in 3D at P+D
-  void show(pt P, String s, vec D) {text(s, P.x+D.x, P.y+D.y, P.z+D.z);  }
+  void show(Pt P, String s, Vec D) {text(s, P.x+D.x, P.y+D.y, P.z+D.z);  }
 
   // curve
 
   // draws a cubic Bezier curve with control points A, B, C, D
-  void bezier(pt A, pt B, pt C, pt D) {
+  void bezier(Pt A, Pt B, Pt C, Pt D) {
     bezier(A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z,D.x,D.y,D.z);
   }
 
   // draws a cubic Bezier curve with control points A, B, C, D
-  void bezier(pt [] C) {bezier(C[0],C[1],C[2],C[3]);}
+  void bezier(Pt[] C) {bezier(C[0],C[1],C[2],C[3]);}
 
-  pt bezierPoint(pt[] C, float t) {
+  Pt bezierPoint(Pt[] C, float t) {
     return P(
       bezierPoint(C[0].x,C[1].x,C[2].x,C[3].x,t),
       bezierPoint(C[0].y,C[1].y,C[2].y,C[3].y,t),
@@ -453,7 +453,7 @@ public class Main extends PApplet {
     );
   }
 
-  vec bezierTangent(pt[] C, float t) {
+  Vec bezierTangent(Pt[] C, float t) {
     return V(
       bezierTangent(C[0].x,C[1].x,C[2].x,C[3].x,t),
       bezierTangent(C[0].y,C[1].y,C[2].y,C[3].y,t),
@@ -462,13 +462,13 @@ public class Main extends PApplet {
   }
 
   // draws cubic Bezier interpolating (P0,T0) and (P1,T1)
-  void PT(pt P0, vec T0, pt P1, vec T1) {
+  void PT(Pt P0, Vec T0, Pt P1, Vec T1) {
     float d=d(P0,P1)/3;
     bezier(P0, P(P0,-d,U(T0)), P(P1,-d,U(T1)), P1);
   }
 
   // draws cubic Bezier interpolating (P0,T0) and (P1,T1)
-  void PTtoBezier(pt P0, vec T0, pt P1, vec T1, pt [] C) {
+  void PTtoBezier(Pt P0, Vec T0, Pt P1, Vec T1, Pt[] C) {
     float d=d(P0,P1)/3;
     C[0].set(P0);
     C[1].set(P(P0,-d,U(T0)));
@@ -476,7 +476,7 @@ public class Main extends PApplet {
     C[3].set(P1);
   }
 
-  vec vecToCubic (pt A, pt B, pt C, pt D, pt E) {
+  Vec vecToCubic (Pt A, Pt B, Pt C, Pt D, Pt E) {
     return V(
       (-A.x+4*B.x-6*C.x+4*D.x-E.x)/6,
       (-A.y+4*B.y-6*C.y+4*D.y-E.y)/6,
@@ -484,31 +484,31 @@ public class Main extends PApplet {
     );
   }
 
-  vec vecToProp (pt B, pt C, pt D) {
+  Vec vecToProp (Pt B, Pt C, Pt D) {
     float cb=d(C,B), cd=d(C,D);
     return V(C,P(B,cb/(cb+cd),D));
   }
 
   // perspective
 
-  pt Pers(pt P, float d) {
+  Pt Pers(Pt P, float d) {
     return P(d*P.x/(d+P.z), d*P.y/(d+P.z), d*P.z/(d+P.z) );
   }
 
-  pt InverserPers(pt P, float d) {
+  Pt InverserPers(Pt P, float d) {
     return P(d*P.x/(d-P.z), d*P.y/(d-P.z), d*P.z/(d-P.z) );
   }
 
   // intersection
 
   // if (P,Q) intersects (A,B,C), return true and set X to the intersection point
-  boolean intersect(pt P, pt Q, pt A, pt B, pt C, pt X)  {
+  boolean intersect(Pt P, Pt Q, Pt A, Pt B, Pt C, Pt X)  {
     return intersect(P,V(P,Q),A,B,C,X);
   }
 
   // if ray from E along T intersects triangle (A,B,C), return true and set X to the intersection point
-  boolean intersect(pt E, vec T, pt A, pt B, pt C, pt X) {
-    vec EA=V(E,A), EB=V(E,B), EC=V(E,C), AB=V(A,B), AC=V(A,C);
+  boolean intersect(Pt E, Vec T, Pt A, Pt B, Pt C, Pt X) {
+    Vec EA=V(E,A), EB=V(E,B), EC=V(E,C), AB=V(A,B), AC=V(A,C);
     boolean s=cw(EA,EB,EC), sA=cw(T,EB,EC), sB=cw(EA,T,EC), sC=cw(EA,EB,T);
     if ( (s==sA) && (s==sB) && (s==sC) ) {
       return false;
@@ -519,39 +519,39 @@ public class Main extends PApplet {
   }
 
   // true if ray from E with direction T hits triangle (A,B,C)
-  boolean rayIntersectsTriangle(pt E, vec T, pt A, pt B, pt C) {
-    vec EA=V(E,A), EB=V(E,B), EC=V(E,C);
+  boolean rayIntersectsTriangle(Pt E, Vec T, Pt A, Pt B, Pt C) {
+    Vec EA=V(E,A), EB=V(E,B), EC=V(E,C);
     boolean s=cw(EA,EB,EC), sA=cw(T,EB,EC), sB=cw(EA,T,EC), sC=cw(EA,EB,T);
     return  (s==sA) && (s==sB) && (s==sC);
   }
 
-  boolean edgeIntersectsTriangle(pt P, pt Q, pt A, pt B, pt C)  {
-    vec PA=V(P,A), PQ=V(P,Q), PB=V(P,B), PC=V(P,C), QA=V(Q,A), QB=V(Q,B), QC=V(Q,C);
+  boolean edgeIntersectsTriangle(Pt P, Pt Q, Pt A, Pt B, Pt C)  {
+    Vec PA=V(P,A), PQ=V(P,Q), PB=V(P,B), PC=V(P,C), QA=V(Q,A), QB=V(Q,B), QC=V(Q,C);
     boolean p=cw(PA,PB,PC), q=cw(QA,QB,QC), a=cw(PQ,PB,PC), b=cw(PA,PQ,PC), c=cw(PQ,PB,PQ);
     return (p!=q) && (p==a) && (p==b) && (p==c);
   }
 
-  float rayParameterToIntersection(pt E, vec T, pt A, pt B, pt C) {
-    vec AE=V(A,E), AB=V(A,B), AC=V(A,C);
+  float rayParameterToIntersection(Pt E, Vec T, Pt A, Pt B, Pt C) {
+    Vec AE=V(A,E), AB=V(A,B), AC=V(A,C);
     return - m(AE,AC,AB) / m(T,AC,AB);
   }
 
   // returns angle in 2D dragged by the mouse around the screen projection of G
-  float angleDraggedAround(pt G) {
-    pt S=P(screenX(G.x,G.y,G.z),screenY(G.x,G.y,G.z),0);
-    vec T=V(S,Pmouse()); vec U=V(S,Mouse());
+  float angleDraggedAround(Pt G) {
+    Pt S=P(screenX(G.x,G.y,G.z),screenY(G.x,G.y,G.z),0);
+    Vec T=V(S,Pmouse()); Vec U=V(S,Mouse());
     return atan2(d(R(U),T),d(U,T));
   }
 
-  float scaleDraggedFrom(pt G) {
-    pt S=P(screenX(G.x,G.y,G.z),screenY(G.x,G.y,G.z),0);
+  float scaleDraggedFrom(Pt G) {
+    Pt S=P(screenX(G.x,G.y,G.z),screenY(G.x,G.y,G.z),0);
     return d(S,Mouse())/d(S,Pmouse());
   }
 
   // TUBE
-  void showTube(pt P0, vec T0, pt P1, vec T1, int n) {
+  void showTube(Pt P0, Vec T0, Pt P1, Vec T1, int n) {
 
-    pt[] C = new pt[4];
+    Pt[] C = new Pt[4];
     makePts(C);
 
     // shows an interpolating Bezier curve from frame 1 to frames 2
@@ -563,8 +563,8 @@ public class Main extends PApplet {
     noStroke();
 
     for (float t=0; t<=1; t+=0.1) {
-      pt B=bezierPoint(C,t);
-      vec T=bezierTangent(C,t);
+      Pt B=bezierPoint(C,t);
+      Vec T=bezierTangent(C,t);
       stroke(magenta);
       show(B,0.1f,T);
       noStroke();
@@ -573,9 +573,9 @@ public class Main extends PApplet {
     }
   }
 
-  void showQuads(pt P0, vec T0, vec N0, pt P1, vec T1, vec N1, int n, int ne, float r, int col) {
+  void showQuads(Pt P0, Vec T0, Vec N0, Pt P1, Vec T1, Vec N1, int n, int ne, float r, int col) {
 
-    pt[] G = new pt[4];
+    Pt[] G = new Pt[4];
     makePts(G);
 
     float d=d(P0,P1)/3;
@@ -589,7 +589,7 @@ public class Main extends PApplet {
     G[2].add(r,N1);
     G[3].add(r,N1);
 
-    pt[] C = new pt[n];
+    Pt[] C = new Pt[n];
     makePts(C);
 
     for(int i=0; i<n; i++) {
@@ -597,10 +597,10 @@ public class Main extends PApplet {
     }
 
     // displacement vectors
-    vec [] L = new vec[ne];
+    Vec[] L = new Vec[ne];
 
-    vec T = U(V(C[0],C[1]));
-    vec LL = N(V(0,0,1),T);
+    Vec T = U(V(C[0],C[1]));
+    Vec LL = N(V(0,0,1),T);
     if (n2(LL)<0.01) {
       LL=N(V(1,0,0),T);
     }
@@ -609,7 +609,7 @@ public class Main extends PApplet {
     }
     L[0]=U(N(LL,T));
 
-    pt [][] P = new pt [2][ne];
+    Pt[][] P = new Pt[2][ne];
     makePts(P[0]);
     makePts(P[1]);
 
@@ -624,8 +624,8 @@ public class Main extends PApplet {
       s[j]=r*sin(TWO_PI*j/ne);
     }
 
-    vec I0=U(L[0]);
-    vec J0=U(N(L[0],T));
+    Vec I0=U(L[0]);
+    Vec J0=U(N(L[0],T));
 
     for (int j=0; j<ne; j++) {
       P[p][j].set(P(P(C[0],C[1]),c[j],I0,s[j],J0));
@@ -637,10 +637,10 @@ public class Main extends PApplet {
 
       dark=!dark;
 
-      vec I=U(V(C[i-1],C[i]));
-      vec Ip=U(V(C[i],C[i+1]));
-      vec IpmI=M(Ip,I);
-      vec N=N(I,Ip);
+      Vec I=U(V(C[i-1],C[i]));
+      Vec Ip=U(V(C[i],C[i+1]));
+      Vec IpmI=M(Ip,I);
+      Vec N=N(I,Ip);
 
       if (n(N)<0.001) {
         L[i]=V(L[i-1]);
@@ -648,7 +648,7 @@ public class Main extends PApplet {
         L[i] = A( L[i-1] , m(U(N),I,L[i-1]) , N(U(N),M(Ip,I)) );
       }
       I=U(L[i]);
-      vec J=U(N(I,Ip));
+      Vec J=U(N(I,Ip));
 
       for (int j=0; j<ne; j++) {
         P[p][j].set(P(P(C[i],C[i+1]),c[j],I,s[j],J));

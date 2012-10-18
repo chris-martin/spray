@@ -1,76 +1,76 @@
 package tube;
 
 // point
-public class pt {
+public class Pt {
 
     public float x, y, z;
 
-    public pt() {
+    public Pt() {
     }
 
-    public pt(float px, float py, float pz) {
+    public Pt(float px, float py, float pz) {
         x = px;
         y = py;
         z = pz;
     }
 
-    public pt set(float px, float py, float pz) {
+    public Pt set(float px, float py, float pz) {
         x = px;
         y = py;
         z = pz;
         return this;
     }
 
-    public pt set(pt P) {
+    public Pt set(Pt P) {
         x = P.x;
         y = P.y;
         z = P.z;
         return this;
     }
 
-    public pt add(pt P) {
+    public Pt add(Pt P) {
         x += P.x;
         y += P.y;
         z += P.z;
         return this;
     }
 
-    public pt add(vec V) {
+    public Pt add(Vec V) {
         x += V.x;
         y += V.y;
         z += V.z;
         return this;
     }
 
-    public pt add(float s, vec V) {
+    public Pt add(float s, Vec V) {
         x += s * V.x;
         y += s * V.y;
         z += s * V.z;
         return this;
     }
 
-    public pt sub(pt P) {
+    public Pt sub(Pt P) {
         x -= P.x;
         y -= P.y;
         z -= P.z;
         return this;
     }
 
-    public pt mul(float f) {
+    public Pt mul(float f) {
         x *= f;
         y *= f;
         z *= f;
         return this;
     }
 
-    public pt div(float f) {
+    public Pt div(float f) {
         x /= f;
         y /= f;
         z /= f;
         return this;
     }
 
-    public pt div(int f) {
+    public Pt div(int f) {
         x /= f;
         y /= f;
         z /= f;
@@ -78,86 +78,86 @@ public class pt {
     }
 
     // point (x,y,z)
-    static pt P() {
-        return new pt();
+    static Pt P() {
+        return new Pt();
     }
 
     // point (x,y,z)
-    static pt P(float x, float y, float z) {
-        return new pt(x, y, z);
+    static Pt P(float x, float y, float z) {
+        return new Pt(x, y, z);
     }
 
     // copy of point P
-    static pt P(pt A) {
-        return new pt(A.x, A.y, A.z);
+    static Pt P(Pt A) {
+        return new Pt(A.x, A.y, A.z);
     }
 
     // A+sAB
-    static pt P(pt A, float s, pt B) {
-        return new pt(A.x + s * (B.x - A.x), A.y + s * (B.y - A.y), A.z + s * (B.z - A.z));
+    static Pt P(Pt A, float s, Pt B) {
+        return new Pt(A.x + s * (B.x - A.x), A.y + s * (B.y - A.y), A.z + s * (B.z - A.z));
     }
 
     // (A+B)/2
-    static pt P(pt A, pt B) {
+    static Pt P(Pt A, Pt B) {
         return P((A.x + B.x) / 2.0f, (A.y + B.y) / 2.0f, (A.z + B.z) / 2.0f);
     }
 
     // (A+B+C)/3
-    static pt P(pt A, pt B, pt C) {
-        return new pt((A.x + B.x + C.x) / 3.0f, (A.y + B.y + C.y) / 3.0f, (A.z + B.z + C.z) / 3.0f);
+    static Pt P(Pt A, Pt B, Pt C) {
+        return new Pt((A.x + B.x + C.x) / 3.0f, (A.y + B.y + C.y) / 3.0f, (A.z + B.z + C.z) / 3.0f);
     }
 
     // (A+B+C+D)/4
-    static pt P(pt A, pt B, pt C, pt D) {
+    static Pt P(Pt A, Pt B, Pt C, Pt D) {
         return P(P(A, B), P(C, D));
     }
 
     // sA
-    static pt P(float s, pt A) {
-        return new pt(s * A.x, s * A.y, s * A.z);
+    static Pt P(float s, Pt A) {
+        return new Pt(s * A.x, s * A.y, s * A.z);
     }
 
     // A+B
-    static pt A(pt A, pt B) {
-        return new pt(A.x + B.x, A.y + B.y, A.z + B.z);
+    static Pt A(Pt A, Pt B) {
+        return new Pt(A.x + B.x, A.y + B.y, A.z + B.z);
     }
 
     // aA+bB
-    static pt P(float a, pt A, float b, pt B) {
+    static Pt P(float a, Pt A, float b, Pt B) {
         return A(P(a, A), P(b, B));
     }
 
     // aA+bB+cC
-    static pt P(float a, pt A, float b, pt B, float c, pt C) {
+    static Pt P(float a, Pt A, float b, Pt B, float c, Pt C) {
         return A(P(a, A), P(b, B, c, C));
     }
 
     // aA+bB+cC+dD
-    static pt P(float a, pt A, float b, pt B, float c, pt C, float d, pt D) {
+    static Pt P(float a, Pt A, float b, Pt B, float c, Pt C, float d, Pt D) {
         return A(P(a, A, b, B), P(c, C, d, D));
     }
 
     // P+V
-    static pt P(pt P, vec V) {
-        return new pt(P.x + V.x, P.y + V.y, P.z + V.z);
+    static Pt P(Pt P, Vec V) {
+        return new Pt(P.x + V.x, P.y + V.y, P.z + V.z);
     }
 
     // P+sV
-    static pt P(pt P, float s, vec V) {
-        return new pt(P.x + s * V.x, P.y + s * V.y, P.z + s * V.z);
+    static Pt P(Pt P, float s, Vec V) {
+        return new Pt(P.x + s * V.x, P.y + s * V.y, P.z + s * V.z);
     }
 
     // O+xI+yJ
-    static pt P(pt O, float x, vec I, float y, vec J) {
+    static Pt P(Pt O, float x, Vec I, float y, Vec J) {
         return P(O.x + x * I.x + y * J.x, O.y + x * I.y + y * J.y, O.z + x * I.z + y * J.z);
     }
 
     // O+xI+yJ+kZ
-    static pt P(pt O, float x, vec I, float y, vec J, float z, vec K) {
+    static Pt P(Pt O, float x, Vec I, float y, Vec J, float z, Vec K) {
         return P(O.x + x * I.x + y * J.x + z * K.x, O.y + x * I.y + y * J.y + z * K.y, O.z + x * I.z + y * J.z + z * K.z);
     }
 
-    static void makePts(pt[] C) {
+    static void makePts(Pt[] C) {
         for (int i = 0; i < C.length; i++) C[i] = P();
     }
 

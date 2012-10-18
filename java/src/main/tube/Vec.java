@@ -3,76 +3,76 @@ package tube;
 import static processing.core.PApplet.*;
 
 // vector
-public class vec {
+public class Vec {
 
     public float x, y, z;
 
-    public vec() {
+    public Vec() {
     }
 
-    public vec(float px, float py, float pz) {
+    public Vec(float px, float py, float pz) {
         x = px;
         y = py;
         z = pz;
     }
 
-    public vec set(float px, float py, float pz) {
+    public Vec set(float px, float py, float pz) {
         x = px;
         y = py;
         z = pz;
         return this;
     }
 
-    public vec set(vec V) {
+    public Vec set(Vec V) {
         x = V.x;
         y = V.y;
         z = V.z;
         return this;
     }
 
-    public vec add(vec V) {
+    public Vec add(Vec V) {
         x += V.x;
         y += V.y;
         z += V.z;
         return this;
     }
 
-    public vec add(float s, vec V) {
+    public Vec add(float s, Vec V) {
         x += s * V.x;
         y += s * V.y;
         z += s * V.z;
         return this;
     }
 
-    public vec sub(vec V) {
+    public Vec sub(Vec V) {
         x -= V.x;
         y -= V.y;
         z -= V.z;
         return this;
     }
 
-    public vec mul(float f) {
+    public Vec mul(float f) {
         x *= f;
         y *= f;
         z *= f;
         return this;
     }
 
-    public vec div(float f) {
+    public Vec div(float f) {
         x /= f;
         y /= f;
         z /= f;
         return this;
     }
 
-    public vec div(int f) {
+    public Vec div(int f) {
         x /= f;
         y /= f;
         z /= f;
         return this;
     }
 
-    public vec rev() {
+    public Vec rev() {
         x = -x;
         y = -y;
         z = -z;
@@ -83,7 +83,7 @@ public class vec {
         return (sqrt(sq(x) + sq(y) + sq(z)));
     }
 
-    public vec normalize() {
+    public Vec normalize() {
         float n = norm();
         if (n > 0.000001) {
             div(n);
@@ -92,7 +92,7 @@ public class vec {
     }
 
     // Rotate by a parallel to plane (I,J)
-    public vec rotate(float a, vec I, vec J) {
+    public Vec rotate(float a, Vec I, Vec J) {
         float x = Main.d(this, I), y = Main.d(this, J);
         float c = cos(a), s = sin(a);
         add(x * c - x - y * s, I);
@@ -101,94 +101,94 @@ public class vec {
     }
 
     // make vector (x,y,z)
-    static vec V() {
-        return new vec();
+    static Vec V() {
+        return new Vec();
     }
 
     // make vector (x,y,z)
-    static vec V(float x, float y, float z) {
-        return new vec(x, y, z);
+    static Vec V(float x, float y, float z) {
+        return new Vec(x, y, z);
     }
 
     // make copy of vector V
-    static vec V(vec V) {
-        return new vec(V.x, V.y, V.z);
+    static Vec V(Vec V) {
+        return new Vec(V.x, V.y, V.z);
     }
 
     // A+B
-    static vec A(vec A, vec B) {
-        return new vec(A.x + B.x, A.y + B.y, A.z + B.z);
+    static Vec A(Vec A, Vec B) {
+        return new Vec(A.x + B.x, A.y + B.y, A.z + B.z);
     }
 
     // U+sV
-    static vec A(vec U, float s, vec V) {
+    static Vec A(Vec U, float s, Vec V) {
         return V(U.x + s * V.x, U.y + s * V.y, U.z + s * V.z);
     }
 
     // U-V
-    static vec M(vec U, vec V) {
+    static Vec M(Vec U, Vec V) {
         return V(U.x - V.x, U.y - V.y, U.z - V.z);
     }
 
     // (A+B)/2
-    static vec V(vec A, vec B) {
-        return new vec((A.x + B.x) / 2.0f, (A.y + B.y) / 2.0f, (A.z + B.z) / 2.0f);
+    static Vec V(Vec A, Vec B) {
+        return new Vec((A.x + B.x) / 2.0f, (A.y + B.y) / 2.0f, (A.z + B.z) / 2.0f);
     }
 
     // (1-s)A+sB
-    static vec V(vec A, float s, vec B) {
-        return new vec(A.x + s * (B.x - A.x), A.y + s * (B.y - A.y), A.z + s * (B.z - A.z));
+    static Vec V(Vec A, float s, Vec B) {
+        return new Vec(A.x + s * (B.x - A.x), A.y + s * (B.y - A.y), A.z + s * (B.z - A.z));
     }
 
     // (A+B+C)/3
-    static vec V(vec A, vec B, vec C) {
-        return new vec((A.x + B.x + C.x) / 3.0f, (A.y + B.y + C.y) / 3.0f, (A.z + B.z + C.z) / 3.0f);
+    static Vec V(Vec A, Vec B, Vec C) {
+        return new Vec((A.x + B.x + C.x) / 3.0f, (A.y + B.y + C.y) / 3.0f, (A.z + B.z + C.z) / 3.0f);
     }
 
     // (A+B+C+D)/4
-    static vec V(vec A, vec B, vec C, vec D) {
+    static Vec V(Vec A, Vec B, Vec C, Vec D) {
         return V(V(A, B), V(C, D));
     }
 
     // sA
-    static vec V(float s, vec A) {
-        return new vec(s * A.x, s * A.y, s * A.z);
+    static Vec V(float s, Vec A) {
+        return new Vec(s * A.x, s * A.y, s * A.z);
     }
 
     // aA+bB
-    static vec V(float a, vec A, float b, vec B) {
+    static Vec V(float a, Vec A, float b, Vec B) {
         return A(V(a, A), V(b, B));
     }
 
     // aA+bB+cC
-    static vec V(float a, vec A, float b, vec B, float c, vec C) {
+    static Vec V(float a, Vec A, float b, Vec B, float c, Vec C) {
         return A(V(a, A, b, B), V(c, C));
     }
 
     // PQ
-    static vec V(pt P, pt Q) {
-        return new vec(Q.x - P.x, Q.y - P.y, Q.z - P.z);
+    static Vec V(Pt P, Pt Q) {
+        return new Vec(Q.x - P.x, Q.y - P.y, Q.z - P.z);
     }
 
     // V/||V||
-    static vec U(vec V) {
+    static Vec U(Vec V) {
         float n = V.norm();
         if (n < 0.000001) return V(0, 0, 0);
         else return V.div(n);
     }
 
     // UxV cross product (normal to both)
-    static vec N(vec U, vec V) {
+    static Vec N(Vec U, Vec V) {
         return V(U.y * V.z - U.z * V.y, U.z * V.x - U.x * V.z, U.x * V.y - U.y * V.x);
     }
 
     // normal to triangle (A,B,C), not normalized (proportional to area)
-    static vec N(pt A, pt B, pt C) {
+    static Vec N(Pt A, Pt B, Pt C) {
         return N(V(A, B), V(A, C));
     }
 
     // (UxV)xV unit normal to U in the plane UV
-    static vec B(vec U, vec V) {
+    static Vec B(Vec U, Vec V) {
         return U(N(N(U, V), U));
     }
 
