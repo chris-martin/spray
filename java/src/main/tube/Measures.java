@@ -1,7 +1,9 @@
 package tube;
 
+import spray.Geometry.Vec3;
+
+import static spray.Geometry.distance;
 import static tube.Vec.N;
-import static tube.Vec.V;
 
 import static processing.core.PApplet.*;
 
@@ -13,13 +15,13 @@ public class Measures {
     }
 
     // (UxV)*W  mixed product, determinant
-    public static float m(Vec U, Vec V, Vec W) {
-        return d(U, N(V, W));
+    public static float m(Vec3 U, Vec3 V, Vec3 W) {
+        return distance(U, V.cross(W));
     }
 
     // det (EA EB EC) is >0 when E sees (A,B,C) clockwise
-    public static float m(Pt E, Pt A, Pt B, Pt C) {
-        return m(V(E, A), V(E, B), V(E, C));
+    public static float m(Vec3 E, Vec3 A, Vec3 B, Vec3 C) {
+        return m(A.sub(E), B.sub(E), C.sub(E));
     }
 
     // V*V    norm squared
@@ -43,8 +45,8 @@ public class Measures {
     }
 
     // volume of tet
-    public static float volume(Pt A, Pt B, Pt C, Pt D) {
-        return m(V(A, B), V(A, C), V(A, D)) / 6;
+    public static float volume(Vec3 A, Vec3 B, Vec3 C, Vec3 D) {
+        return m(B.sub(A), C.sub(A), D.sub(A)) / 6;
     }
 
     // true if U and V are almost parallel
@@ -58,12 +60,12 @@ public class Measures {
     }
 
     // (UxV)*W>0  U,V,W are clockwise
-    public static boolean cw(Vec U, Vec V, Vec W) {
+    public static boolean cw(Vec3 U, Vec3 V, Vec3 W) {
         return m(U, V, W) > 0;
     }
 
     // tet is oriented so that A sees B, C, D clockwise
-    public static boolean cw(Pt A, Pt B, Pt C, Pt D) {
+    public static boolean cw(Vec3 A, Vec3 B, Vec3 C, Vec3 D) {
         return volume(A, B, C, D) > 0;
     }
 

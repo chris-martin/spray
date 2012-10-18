@@ -638,7 +638,7 @@ public class Main extends PApplet {
             if (n(N) < 0.001) {
                 L[i] = V(L[i - 1]);
             } else {
-                L[i] = A(L[i - 1], m(U(N), I, L[i - 1]), N(U(N), M(Ip, I)));
+                L[i] = A(L[i - 1], m(U(N).$, I.$, L[i - 1].$), N(U(N), M(Ip, I)));
             }
             I = U(L[i]);
             Vec J = U(N(I, Ip));
