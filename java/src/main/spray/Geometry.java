@@ -1084,6 +1084,10 @@ public final class Geometry {
 
         Vec3 midpoint();
 
+        Line3 a(Vec3 a);
+
+        Line3 b(Vec3 b);
+
     }
 
     private static class AtoB3 implements Line3 {
@@ -1128,6 +1132,14 @@ public final class Geometry {
 
         public Vec3 midpoint() {
             return a.add(b).div(2);
+        }
+
+        public Line3 a(Vec3 a) {
+            return aToB(a, b);
+        }
+
+        public Line3 b(Vec3 b) {
+            return aToB(a, b);
         }
 
         public String toString() {

@@ -10,8 +10,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
-import static spray.Geometry.origin3;
-import static spray.Geometry.xyz;
+import static spray.Geometry.*;
 import static tube.Color.*;
 
 public class Main extends PApplet {
@@ -26,15 +25,13 @@ public class Main extends PApplet {
     // camera target point set with mouse when pressing 't'
     Vec3 target = origin3();
 
-    Vec3 eye = origin3();
-
-    Vec3 lookAt = origin3();
+    Line3 view = aToB(origin3(), origin3());
 
     // view distance
     float d = 300;
 
     // angles
-    float a, b;
+    float angle_a, angle_b;
 
     // picked surface point Q and screen aligned vectors {I,J,K} set when picked
     Vec3 Q = origin3();
@@ -57,8 +54,8 @@ public class Main extends PApplet {
         // Q and target and for picking the local frames 1 and 2
         fill(yellow);
         pushMatrix();
-        rotateY(PI / 2);
-        rect(0, 0, 400, 400);
+        rotateY(PI / 4);
+        rect(0, 0, 380, 300);
         popMatrix();
 
         // sets the target point target where the mouse points.
@@ -86,22 +83,22 @@ public class Main extends PApplet {
 
     }
 
+    public void mouseMoved() {
+        try {
+            new java.awt.Robot().mouseMove(50, 50);
+        } catch (java.awt.AWTException ignored) {
+        }
+    }
+
     // camera rotation around target when no key is pressed
     public void mouseDragged() {
         if (keyPressed) {
             return;
         }
-        a -= PI * (mouseY - pmouseY) / height;
-        a = max(-PI / 2 + 0.1f, a);
-        a = min(PI / 2 - 0.1f, a);
-        b += PI * (mouseX - pmouseX) / width;
-    }
-
-    // sets the new focus point to wher ethe mous points to when the mouse-button is released
-    public void keyReleased() {
-        if (key == 't') {
-            lookAt = target;
-        }
+        angle_a -= PI * (mouseY - pmouseY) / height;
+        angle_a = max(-PI / 2 + 0.1f, angle_a);
+        angle_a = min(PI / 2 - 0.1f, angle_a);
+        angle_b += PI * (mouseX - pmouseX) / width;
     }
 
     public void keyPressed() {
@@ -109,9 +106,9 @@ public class Main extends PApplet {
         // reset the view
         if (key == ' ') {
             d = 300;
-            b = 0;
-            a = 0;
-            lookAt = origin3();
+            angle_b = 0;
+            angle_a = 0;
+            view = view.b(origin3());
         }
 
     }
@@ -119,7 +116,7 @@ public class Main extends PApplet {
     void changeViewAndFrame() {
 
         // viewing direction angles
-        float ca = cos(a), sa = sin(a), cb = cos(b), sb = sin(b);
+        float ca = cos(angle_a), sa = sin(angle_a), cb = cos(angle_b), sb = sin(angle_b);
 
         // changes distance form the target to the viewpoint
         if (keyPressed && key == 'd') {
@@ -127,18 +124,24 @@ public class Main extends PApplet {
         }
 
         // sets the eye
-        eye = xyz(d * cb * ca, d * sa, d * sb * ca);
+        view = view.a(xyz(d * cb * ca, d * sa, d * sb * ca));
 
         // defines the view : eye, ctr, up
-        camera(eye.x(), eye.y(), eye.z(), lookAt.x(), lookAt.y(), lookAt.z(), 0.0f, 1.0f, 0.0f);
+        {
+            Vec3 a = view.a();
+            Vec3 b = view.b();
+            camera(
+                a.x(), a.y(), a.z(),
+                b.x(), b.y(), b.z(),
+                0.0f, 1.0f, 0.0f
+            );
+        }
 
-        // puts a white light above and to the left of the viewer
-        directionalLight(250, 250, 250, -eye.x(), -eye.y() + 100, -eye.z());
-
-        // in case you want the light to be fixed in model space
-        // ambientLight(100,100,0);
-        // directionalLight(250, 250, 0, -20, 10, 5);
-        // directionalLight(100, 100, 250, 10, -20, -5);
+        // puts the light at a fixed point in model space
+        {
+            ambientLight(100,100,0);
+            directionalLight(250, 250, 0, -20, 10, 5);
+        }
     }
 
     // sets Q where the mouse points to and I, J, K to be aligned with the screen
