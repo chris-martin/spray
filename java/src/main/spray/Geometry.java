@@ -1435,4 +1435,10 @@ public final class Geometry {
         return new PointAndDirection3(a, ab);
     }
 
+    // http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
+    public static float distance(Line3 line, Vec3 c) {
+        Vec3 a = line.a(), b = line.b(), ac = aToB(a, c).ab(), bc = aToB(b, c).ab(), ab = line.ab();
+        return ac.cross(bc).mag() / ab.mag();
+    }
+
 }

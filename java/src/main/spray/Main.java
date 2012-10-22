@@ -1,5 +1,9 @@
 package spray;
 
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.Ordering;
 import processing.core.PApplet;
 import processing.opengl.PGraphicsOpenGL;
 import spray.Geometry.Vec3;
@@ -17,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import static spray.Geometry.*;
@@ -48,6 +53,8 @@ public class Main extends PApplet {
     }
 
     int centerX, centerY;
+
+    int ballRadius = 6;
 
     public void setup() {
         size(900, 500, OPENGL);
@@ -111,24 +118,41 @@ public class Main extends PApplet {
         rect(0, 0, 380, 300);
         popMatrix();
 
-        if (pick) {
-            balls.add(pick());
-            pick = false;
-        }
-
         // to reset the z-buffer used above for picking
         // background(white);
 
         noStroke();
         fill(red);
 
-
         // render sphere of radius r and center P
         for (Vec3 ball : balls) {
             pushMatrix();
             translate(ball.x(), ball.y(), ball.z());
-            sphere(3);
+            sphere(ballRadius);
             popMatrix();
+        }
+
+        if (pick) {
+            Vec3 p = pick();
+            /*Vec3 firstCollision = Ordering.natural()
+                .onResultOf(
+                    new Function<Vec3, Float>() {
+                        public Float apply(Vec3 ball) {
+                            return distance(ball, view.a());
+                        }
+                    }
+                )
+                .min(
+                    FluentIterable.from(balls)
+                        .filter(new Predicate<Vec3>() {
+                            public boolean apply(Vec3 ball) {
+                                return distance(view, ball) < ballRadius * 2.5;
+                            }
+                        })
+                );
+*/
+            balls.add(p);
+            pick = false;
         }
 
         Vec2 motion = origin2();
@@ -143,12 +167,11 @@ public class Main extends PApplet {
         hint(DISABLE_DEPTH_TEST);
         int crosshair = 10;
         stroke(black); strokeWeight(3);
-        line(width/2, height/2-crosshair, width/2, height/2+crosshair);
+        line(width / 2, height / 2 - crosshair, width/ 2 , height / 2 + crosshair);
         line(width / 2 - crosshair, height / 2, width / 2 + crosshair, height / 2);
         stroke(white); strokeWeight(1);
-        line(width/2, height/2-crosshair, width/2, height/2+crosshair);
+        line(width / 2, height / 2 - crosshair, width / 2, height / 2 + crosshair);
         line(width / 2 - crosshair, height / 2, width / 2 + crosshair, height / 2);
-
 
         if (!keyPressed) {
             noLoop();
