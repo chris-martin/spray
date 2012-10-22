@@ -1,6 +1,9 @@
 package spray;
 
+import java.util.List;
+
 import static java.lang.Math.*;
+import static java.util.Arrays.asList;
 import static spray.Geometry.Side.LEFT;
 import static spray.Geometry.Side.RIGHT;
 
@@ -574,6 +577,7 @@ public final class Geometry {
     }
 
     private static class AtoB2 extends BaseLine2 {
+
         final Vec2 a, b;
         Vec2 ab;
 
@@ -631,6 +635,7 @@ public final class Geometry {
     }
 
     private static class PointAndDirection2 extends BaseLine2 {
+
         final Vec2 a, ab;
 
         PointAndDirection2(Vec2 a, Vec2 ab) {
@@ -699,12 +704,15 @@ public final class Geometry {
     }
 
     public static interface Circle2 {
+
         Vec2 center();
 
         float radius();
+
     }
 
     private static class SimpleCircle2 implements Circle2 {
+
         final Vec2 center;
         final float radius;
 
@@ -861,6 +869,9 @@ public final class Geometry {
 
         Vec2 xy();
 
+        /** An arbitrary orthogonal vector. */
+        Vec3 orthog();
+
     }
 
     private static abstract class BaseVec3 implements Vec3 {
@@ -940,12 +951,17 @@ public final class Geometry {
             return azimuthAndElevation(newAzimuth, elevation(), mag());
         }
 
+        public Vec3 orthog() {
+            return azimuthAndElevation(azimuth(), elevation() + HALFPI, mag());
+        }
+
         public String toString() {
             return String.format("(%f, %f, %f)", x(), y(), z());
         }
     }
 
     private static class XYZ extends BaseVec3 {
+
         final float x, y, z;
         float mag, magSquared, elevation, azimuth;
         boolean hasMag, hasMagSquared, hasElevation, hasAzimuth;
@@ -1026,7 +1042,20 @@ public final class Geometry {
         return xyz(x.floatValue(), y.floatValue(), z.floatValue());
     }
 
+    public static Vec3 xyz(float[] array) {
+        return xyz(array[0], array[1], array[2]);
+    }
+
+    public static Vec3 xyz(double[] array) {
+        return xyz(array[0], array[1], array[2]);
+    }
+
+    public static Vec3 xyz(Number[] array) {
+        return xyz(array[0], array[1], array[2]);
+    }
+
     private static class Origin3 implements Vec3 {
+
         public float x() {
             return 0;
         }
@@ -1143,6 +1172,10 @@ public final class Geometry {
             return origin2();
         }
 
+        public Vec3 orthog() {
+            return this;
+        }
+
         public String toString() {
             return "(0, 0, 0)";
         }
@@ -1225,6 +1258,11 @@ public final class Geometry {
          */
         float azimuth();
 
+        /**
+         * An arbitrary line, passing through A, orthogonal to this line.
+         */
+        Line3 aOrthog();
+
     }
 
     private static abstract class BaseLine3 implements Line3 {
@@ -1260,6 +1298,10 @@ public final class Geometry {
 
         public float azimuth() {
             return ab().azimuth();
+        }
+
+        public Line3 aOrthog() {
+            return pointAndStep(a(), ab().orthog());
         }
     }
 
@@ -1435,10 +1477,152 @@ public final class Geometry {
         return new PointAndDirection3(a, ab);
     }
 
-    // http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
+    public static Line3 oTo3(Vec3 b) {
+        return aToB(origin3(), b);
+    }
+
     public static float distance(Line3 line, Vec3 c) {
+        // http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
         Vec3 a = line.a(), b = line.b(), ac = aToB(a, c).ab(), bc = aToB(b, c).ab(), ab = line.ab();
         return ac.cross(bc).mag() / ab.mag();
     }
+
+    private static Vec3 matrixApply(float[][] m, Vec3 x) {
+        return xyz(
+            m[0][0] * x.x() + m[0][1] * x.y() + m[0][2] * x.z(),
+            m[1][0] * x.x() + m[1][1] * x.y() + m[1][2] * x.z(),
+            m[2][0] * x.x() + m[2][1] * x.y() + m[2][2] * x.z()
+        );
+    }
+
+    private static float[][] rotationMatrix(Vec3 axis, float angle) {
+        // http://en.wikipedia.org/wiki/Rotation_matrix
+        Vec3 u = axis.unit();
+        float ux = u.x(), uy = u.y(), uz = u.z();
+        float cosa = (float) cos(angle), sina = (float) sin(angle);
+        return new float[][]{
+            { cosa + ux*ux*(1-cosa), ux*uy*(1-cosa)-uz*sina, ux*uz*(1-cosa)+uy*sina },
+            { uy*ux*(1-cosa)+uz*sina, cosa+uy*uy*(1-cosa), uy*uz*(1-cosa)-ux*sina },
+            { uz*ux*(1-cosa)-uy*sina, uz*uy*(1-cosa)+ux*sina, cosa+uz*uz*(1-cosa) }
+        };
+    }
+
+    public static Vec3 rotatePointAroundLine(Line3 line, Vec3 c, float angle) {
+
+        float[][] matrix = rotationMatrix(line.ab(), angle);
+
+        c = c.sub(line.a());
+        c = matrixApply(matrix, c);
+        c = c.add(line.a());
+
+        return c;
+    }
+
+    public interface Sphere {
+
+        Vec3 center();
+
+        float radius();
+
+    }
+
+    private static class SimpleSphere implements Sphere {
+
+        final Vec3 center;
+        final float radius;
+
+        private SimpleSphere(Vec3 center, float radius) {
+            this.center = center;
+            this.radius = radius;
+        }
+
+        public Vec3 center() {
+            return center;
+        }
+
+        public float radius() {
+            return radius;
+        }
+    }
+
+    public static Sphere sphere(Vec3 center, float radius) {
+        return new SimpleSphere(center, radius);
+    }
+
+    public interface Circle3 {
+
+        Vec3 center();
+
+        /** A vector orthogonal to the plane on which the circle lies. */
+        Vec3 normal();
+
+        float radius();
+
+        /** This sphere's intersection with the XY plane. 0 or 1 circles. */
+        List<Circle2> intersectXY();
+
+        /** This sphere's intersection with the origin-intersectingplane normal to the vector. 0 or 1 circles. */
+        List<Circle3> intersectPlane(Vec3 normal);
+
+    }
+
+    public static class SimpleCircle3 implements Circle3 {
+
+        final Vec3 center;
+        final Vec3 normal;
+        final float radius;
+
+        public SimpleCircle3(Vec3 center, Vec3 normal, float radius) {
+            this.center = center;
+            this.normal = normal;
+            this.radius = radius;
+        }
+
+        public Vec3 center() {
+            return center;
+        }
+
+        public Vec3 normal() {
+            return normal;
+        }
+
+        public float radius() {
+            return radius;
+        }
+
+        public List<Circle2> intersectXY() {
+            // http://en.wikipedia.org/wiki/Plane%E2%80%93sphere_intersection
+            float r = radius, d = center.z();
+            if (d > r) {
+                return asList(new Circle2[] {});
+            }
+            return asList(circle(center.xy(), r*r - d*d));
+        }
+
+        public List<Circle3> intersectPlane(Vec3 normal) {
+            return null; // todo
+        }
+    }
+
+    public static Circle3 circle(Vec3 center, Vec3 normal, float radius) {
+        return new SimpleCircle3(center, normal, radius);
+    }
+
+    /** 0 or 1 circles. */
+    public static List<Circle3> intersect(Sphere a, Sphere b) {
+        // http://mathworld.wolfram.com/Sphere-SphereIntersection.html
+        float R = a.radius(), r = b.radius();
+        if (distance(a.center(), b.center()) > R + r) {
+            return asList(new Circle3[]{});
+        }
+        Line3 ab = aToB(a.center(), b.center());
+        float d = ab.mag();
+        float x = (d*d - r*r + R*R) / (2 * d);
+        Vec3 center = ab.a().add(ab.ab().mag(x));
+        float rad = (float) sqrt((r-d-R) * (R-d-r) * (r-d+R) * (d+r+R)) / (2 * d);
+        return asList(circle(center, ab.ab(), rad));
+    }
+
+
 
 }

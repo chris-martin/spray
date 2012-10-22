@@ -6,14 +6,13 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Ordering;
 import processing.core.PApplet;
 import processing.opengl.PGraphicsOpenGL;
-import spray.Geometry.Vec3;
 import thirdparty.RepeatingReleasedEventsFixer;
 
 import javax.media.opengl.GL;
 import javax.media.opengl.glu.GLU;
-import javax.swing.*;
-import java.awt.Robot;
+import javax.swing.Timer;
 import java.awt.AWTException;
+import java.awt.Robot;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -21,8 +20,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Random;
 
 import static spray.Geometry.*;
 import static tube.Color.*;
@@ -39,7 +39,6 @@ public class Main extends PApplet {
 
     // camera target point set with mouse when pressing 't'
     List<Vec3> balls;
-    boolean pick;
 
     Line3 view;
 
@@ -48,19 +47,26 @@ public class Main extends PApplet {
     boolean[] keys = new boolean[128];
 
     void reset() {
-        view = aToB(xyz(0, -300, 0), origin3());
+        view = aToB(xyz(0, -300, 100), origin3());
         balls = new ArrayList<Vec3>();
+        for (float x = -300; x < 300; x+= ballRadius * 2.5) {
+            for (float z = 0; z < 200; z+= ballRadius * 2.5) {
+                balls.add(xyz(x, 0, z));
+            }
+        }
     }
 
     int centerX, centerY;
 
     int ballRadius = 6;
 
+    final Random random = new Random();
+
     public void setup() {
         size(900, 500, OPENGL);
         centerX = width / 2;
         centerY = height / 2;
-        sphereDetail(12);
+        sphereDetail(1);
         rectMode(CENTER);
         glu = ((PGraphicsOpenGL) g).glu;
         PGraphicsOpenGL pgl = (PGraphicsOpenGL) g;
@@ -93,7 +99,7 @@ public class Main extends PApplet {
 
     public void draw() {
 
-        background(black);
+        background(color(50, 100, 255));
 
         hint(ENABLE_DEPTH_TEST);
         {
@@ -102,7 +108,7 @@ public class Main extends PApplet {
             camera(
                 a.x(), a.y(), a.z(), // eye
                 b.x(), b.y(), b.z(), // center
-                0, 0, 1 // up
+                0, 0, -1 // up
             );
         }
 
@@ -110,19 +116,13 @@ public class Main extends PApplet {
         ambientLight(100, 100, 100);
         directionalLight(250, 250, 250, -20, 10, 5);
 
-        // displays surface of model 1 to set the z-buffer for picking points
-        // Q and target and for picking the local frames 1 and 2
-        fill(color(240, 240, 240));
+        fill(color(100, 250, 100));
         pushMatrix();
-        rotateX(PI / 2);
-        rect(0, 0, 380, 300);
+        rect(0, 0, 5000, 5000);
         popMatrix();
 
-        // to reset the z-buffer used above for picking
-        // background(white);
-
         noStroke();
-        fill(red);
+        fill(color(240, 240, 240));
 
         // render sphere of radius r and center P
         for (Vec3 ball : balls) {
@@ -132,35 +132,53 @@ public class Main extends PApplet {
             popMatrix();
         }
 
-        if (pick) {
-            Vec3 p = pick();
-            /*Vec3 firstCollision = Ordering.natural()
-                .onResultOf(
-                    new Function<Vec3, Float>() {
-                        public Float apply(Vec3 ball) {
-                            return distance(ball, view.a());
-                        }
-                    }
+        if (mousePressed) {
+            float spread = (float) random.nextGaussian() / 5;
+            float rotationAngle = random.nextFloat() * 2 * PI;
+            final Line3 ray = view.b(
+                rotatePointAroundLine(
+                    view,
+                    rotatePointAroundLine(
+                        view.aOrthog(),
+                        view.b(),
+                        spread
+                    ),
+                    rotationAngle
                 )
-                .min(
-                    FluentIterable.from(balls)
-                        .filter(new Predicate<Vec3>() {
-                            public boolean apply(Vec3 ball) {
-                                return distance(view, ball) < ballRadius * 2.5;
+            );
+            Vec3 firstCollision;
+            try {
+                firstCollision = Ordering.natural()
+                    .onResultOf(
+                        new Function<Vec3, Float>() {
+                            public Float apply(Vec3 ball) {
+                                return distance(ball, ray.a());
                             }
-                        })
-                );
-*/
-            balls.add(p);
-            pick = false;
+                        }
+                    )
+                    .min(
+                        FluentIterable.from(balls)
+                            .filter(new Predicate<Vec3>() {
+                                public boolean apply(Vec3 ball) {
+                                    return distance(ray, ball) < ballRadius * 2.5;
+                                }
+                            })
+                    );
+            } catch (NoSuchElementException e) {
+                firstCollision = null;
+            }
+            if (firstCollision != null) {
+
+            }
+            /*balls.add(p);*/
         }
 
         Vec2 motion = origin2();
         Vec2 viewXY = view.ab().xy();
         if (keys['w'] && !keys['s']) { motion = motion.add(viewXY); }
-        if (keys['a'] && !keys['d']) { motion = motion.add(viewXY.rot90()); }
+        if (keys['d'] && !keys['a']) { motion = motion.add(viewXY.rot90()); }
         if (keys['s'] && !keys['w']) { motion = motion.add(viewXY.rot180()); }
-        if (keys['d'] && !keys['a']) { motion = motion.add(viewXY.rot270()); }
+        if (keys['a'] && !keys['d']) { motion = motion.add(viewXY.rot270()); }
         view = view.add(motion.mag(5).in3d());
 
         camera();
@@ -173,7 +191,7 @@ public class Main extends PApplet {
         line(width / 2, height / 2 - crosshair, width / 2, height / 2 + crosshair);
         line(width / 2 - crosshair, height / 2, width / 2 + crosshair, height / 2);
 
-        if (!keyPressed) {
+        if (!mousePressed && !keyPressed) {
             noLoop();
         }
     }
@@ -197,10 +215,10 @@ public class Main extends PApplet {
             Vec2 diff = mouse.sub(pmouse);
 
             float azimuth = view.ab().azimuth();
-            azimuth -= PI * (diff.x()) / width;
+            azimuth += PI * (diff.x()) / width;
 
             float elevation = view.ab().elevation();
-            elevation += PI * (diff.y()) / height;
+            elevation -= PI * (diff.y()) / height;
             elevation = max(-PI / 2 + 0.1f, elevation);
             elevation = min(PI / 2 - 0.1f, elevation);
 
@@ -215,7 +233,6 @@ public class Main extends PApplet {
     }
 
     public void mousePressed() {
-        pick = true;
         loop();
     }
 
@@ -266,7 +283,7 @@ public class Main extends PApplet {
 
         pgogl.endGL();
 
-        return xyz((float) mousePosArr[0], (float) mousePosArr[1], (float) mousePosArr[2]);
+        return xyz(mousePosArr);
     }
 
 }
