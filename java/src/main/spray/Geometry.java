@@ -13,13 +13,24 @@ public final class Geometry {
     private static final float PI = (float) Math.PI;
     private static final float PI2 = PI * 2;
     private static final float HALFPI = PI / 2;
+    private static final float QUARTERPI = PI / 4;
+    private static final float NEG_QUARTERPI = PI / -4;
+    private static final float THREE_HALVES_PI = (float) (1.5) * PI;
 
-    private static float angle(float a) {
+    private static float mod2pi(float a) {
         return a < 0 ? ((a % PI2) + PI2) : (a % PI2);
     }
 
-    private static float angle(float a, boolean flip) {
-        return angle(flip ? a + PI : a);
+    private static float mod2pi(float a, boolean flip) {
+        return mod2pi(flip ? a + PI : a);
+    }
+
+    private static float elevation(float a) {
+        if (a >= NEG_QUARTERPI && a <= QUARTERPI) return a;
+        a = mod2pi(a);
+        if (a <= QUARTERPI) return a;
+        if (a >= THREE_HALVES_PI) return a - PI2;
+        return PI - a;
     }
 
     private static int sign(float x) {
@@ -31,63 +42,70 @@ public final class Geometry {
      */
     public static interface Vec2 extends Comparable<Vec2> {
 
-        public float x();
+        float x();
 
-        public float y();
+        float y();
 
-        public float ang();
+        float ang();
 
-        public float mag();
+        float mag();
 
-        public Vec2 mag(float newMag);
+        Vec2 mag(float newMag);
 
         /**
          * Equivalent to mag(1).
          */
-        public Vec2 unit();
+        Vec2 unit();
 
-        public Vec2 add(Vec2 o);
+        Vec2 add(Vec2 o);
 
-        public Vec2 sub(Vec2 o);
+        Vec2 sub(Vec2 o);
 
-        public Vec2 mult(float factor);
+        Vec2 mult(float factor);
 
-        public Vec2 mult(Number factor);
+        Vec2 mult(Number factor);
 
-        public Vec2 div(float divisor);
+        Vec2 div(float divisor);
 
-        public Vec2 div(Number divisor);
+        Vec2 div(Number divisor);
 
-        public Vec2 rot(float ang);
+        Vec2 rot(float ang);
 
-        public Vec2 rot(Number ang);
+        Vec2 rot(Number ang);
 
-        public Vec2 addX(float o);
+        Vec2 addX(float o);
 
-        public Vec2 addY(float o);
+        Vec2 addY(float o);
 
-        public Vec2 subX(float o);
+        Vec2 subX(float o);
 
-        public Vec2 subY(float o);
+        Vec2 subY(float o);
 
         /**
          * This is exactly (0, 0).
          */
-        public boolean isOrigin();
+        boolean isOrigin();
 
-        public Vec2 rot90();
+        Vec2 rot90();
 
-        public Vec2 rot180();
+        Vec2 rot180();
+
+        Vec2 rot270();
 
         /**
          * Scalar (dot) product.
          */
-        public float dot(Vec2 o);
+        float dot(Vec2 o);
 
         /**
          * U x V = U dot rot90(V).
          */
-        public float cross(Vec2 o);
+        float cross(Vec2 o);
+
+        /**
+         * Raises this 2d vector into three dimensions by adding a zero-value z value.
+         */
+        Vec3 in3d();
 
     }
 
@@ -97,19 +115,19 @@ public final class Geometry {
         }
 
         public Vec2 add(Vec2 o) {
-            return new XY(this.x() + o.x(), this.y() + o.y());
+            return xy(this.x() + o.x(), this.y() + o.y());
         }
 
         public Vec2 sub(Vec2 o) {
-            return new XY(this.x() - o.x(), this.y() - o.y());
+            return xy(this.x() - o.x(), this.y() - o.y());
         }
 
         public Vec2 mag(float newMag) {
-            return new Ang2(ang(), newMag);
+            return angleVec2(ang(), newMag);
         }
 
         public Vec2 unit() {
-            return new Ang2(ang(), 1);
+            return angleVec2(ang(), 1);
         }
 
         public Vec2 mult(Number factor) {
@@ -145,7 +163,7 @@ public final class Geometry {
         }
 
         public Vec2 rot(float ang) {
-            return new Ang2(ang() + ang, mag());
+            return angleVec2(ang() + ang, mag());
         }
 
         public Vec2 rot(Number ang) {
@@ -182,7 +200,7 @@ public final class Geometry {
         public float ang() {
             if (!hasAng) {
                 ang = (float) atan2(y, x);
-                hasMag = true;
+                hasAng = true;
             }
             return ang;
         }
@@ -203,13 +221,21 @@ public final class Geometry {
             return new XY(-1 * y, x);
         }
 
-        public Vec2 mult(float f) {
-            if (abs(f) < EPSILON) return origin2();
-            return new XY(f * x, f * y);
+        public XY rot270() {
+            return new XY(y, -1 * x);
         }
 
-        public XY div(float d) {
-            return new XY(x / d, y / d);
+        public Vec2 mult(float f) {
+            if (abs(f) < EPSILON) return origin2();
+            return xy(f * x, f * y);
+        }
+
+        public Vec2 div(float d) {
+            return xy(x / d, y / d);
+        }
+
+        public Vec3 in3d() {
+            return xyz(x, y, 0);
         }
     }
 
@@ -235,12 +261,12 @@ public final class Geometry {
         boolean hasXy;
 
         Ang2(float ang, float mag) {
-            this.ang = angle(ang, mag < 0);
+            this.ang = mod2pi(ang, mag < 0);
             this.mag = abs(mag);
         }
 
         Ang2(float ang) {
-            this.ang = angle(ang);
+            this.ang = mod2pi(ang);
             mag = 1;
         }
 
@@ -269,21 +295,29 @@ public final class Geometry {
             return mag;
         }
 
-        public Ang2 rot180() {
-            return new Ang2(ang + PI, mag);
+        public Vec2 rot180() {
+            return angleVec2(ang + PI, mag);
         }
 
-        public Ang2 rot90() {
-            return new Ang2(ang + HALFPI, mag);
+        public Vec2 rot90() {
+            return angleVec2(ang + HALFPI, mag);
+        }
+
+        public Vec2 rot270() {
+            return angleVec2(ang - HALFPI, mag);
         }
 
         public Vec2 mult(float f) {
             if (abs(f) < EPSILON) return origin2();
-            return new Ang2(ang, f * mag);
+            return angleVec2(ang, f * mag);
         }
 
-        public Ang2 div(float d) {
-            return new Ang2(ang, mag / d);
+        public Vec2 div(float d) {
+            return angleVec2(ang, mag / d);
+        }
+
+        public Vec3 in3d() {
+            return azimuthAndElevation(ang, 0, mag);
         }
     }
 
@@ -337,6 +371,10 @@ public final class Geometry {
         }
 
         public Vec2 rot90() {
+            return this;
+        }
+
+        public Vec2 rot270() {
             return this;
         }
 
@@ -406,6 +444,14 @@ public final class Geometry {
 
         public boolean isOrigin() {
             return true;
+        }
+
+        public Vec3 in3d() {
+            return origin3();
+        }
+
+        public String toString() {
+            return "(0, 0)";
         }
     }
 
@@ -584,11 +630,10 @@ public final class Geometry {
         return new AtoB2(a, b);
     }
 
-    private static class PointAndDirection extends BaseLine2 {
+    private static class PointAndDirection2 extends BaseLine2 {
         final Vec2 a, ab;
-        Vec2 b;
 
-        PointAndDirection(Vec2 a, Vec2 ab) {
+        PointAndDirection2(Vec2 a, Vec2 ab) {
             this.a = a;
             this.ab = ab;
         }
@@ -598,8 +643,7 @@ public final class Geometry {
         }
 
         public Vec2 b() {
-            if (b == null) b = a.add(ab);
-            return b;
+            return a.add(ab);
         }
 
         public Vec2 ab() {
@@ -628,15 +672,15 @@ public final class Geometry {
     }
 
     public static Line2 pointAndStep(Vec2 a, Vec2 ab) {
-        return new PointAndDirection(a, ab);
+        return new PointAndDirection2(a, ab);
     }
 
     public static Line2 pointAndStep(Vec2 a, float ang) {
-        return new PointAndDirection(a, Geometry.angleVec2(ang));
+        return new PointAndDirection2(a, Geometry.angleVec2(ang));
     }
 
     public static Line2 pointAndStep(Vec2 a, Number ang) {
-        return new PointAndDirection(a, angleVec2(ang));
+        return new PointAndDirection2(a, angleVec2(ang));
     }
 
     public static Vec2 intersect(Line2 ab, Line2 cd) {
@@ -807,6 +851,16 @@ public final class Geometry {
         /** Rotate 90 degrees in the XY plane. */
         Vec3 rot90xy();
 
+        float azimuth();
+
+        float elevation();
+
+        Vec3 azimuth(float newAzimuth);
+
+        Vec3 elevation(float newElevation);
+
+        Vec2 xy();
+
     }
 
     private static abstract class BaseVec3 implements Vec3 {
@@ -815,11 +869,11 @@ public final class Geometry {
         }
 
         public Vec3 add(Vec3 o) {
-            return new XYZ(this.x() + o.x(), this.y() + o.y(), this.z() + o.z());
+            return xyz(this.x() + o.x(), this.y() + o.y(), this.z() + o.z());
         }
 
         public Vec3 sub(Vec3 o) {
-            return new XYZ(this.x() - o.x(), this.y() - o.y(), this.z() - o.z());
+            return xyz(this.x() - o.x(), this.y() - o.y(), this.z() - o.z());
         }
 
         public Vec3 mag(float newMag) {
@@ -878,6 +932,14 @@ public final class Geometry {
             return false;
         }
 
+        public Vec3 elevation(float newElevation) {
+            return azimuthAndElevation(azimuth(), newElevation, mag());
+        }
+
+        public Vec3 azimuth(float newAzimuth) {
+            return azimuthAndElevation(newAzimuth, elevation(), mag());
+        }
+
         public String toString() {
             return String.format("(%f, %f, %f)", x(), y(), z());
         }
@@ -885,8 +947,8 @@ public final class Geometry {
 
     private static class XYZ extends BaseVec3 {
         final float x, y, z;
-        float mag, magSquared;
-        boolean hasMag, hasMagSquared;
+        float mag, magSquared, elevation, azimuth;
+        boolean hasMag, hasMagSquared, hasElevation, hasAzimuth;
 
         XYZ(float x, float y, float z) {
             this.x = x;
@@ -924,15 +986,35 @@ public final class Geometry {
 
         public Vec3 mult(float f) {
             if (abs(f) < EPSILON) return origin3();
-            return new XYZ(f * x, f * y, f * z);
+            return xyz(f * x, f * y, f * z);
         }
 
-        public XYZ div(float d) {
-            return new XYZ(x / d, y / d, z / d);
+        public Vec3 div(float d) {
+            return xyz(x / d, y / d, z / d);
         }
 
         public Vec3 rot90xy() {
             return xyz(-1 * y, x, z);
+        }
+
+        public float elevation() {
+            if (!hasElevation) {
+                elevation = (float) asin(z / mag());
+                hasElevation = true;
+            }
+            return elevation;
+        }
+
+        public float azimuth() {
+            if (!hasAzimuth) {
+                azimuth = (float) atan2(y, x);
+                hasAzimuth = true;
+            }
+            return azimuth;
+        }
+
+        public Vec2 xy() {
+            return Geometry.xy(x, y);
         }
     }
 
@@ -1040,6 +1122,30 @@ public final class Geometry {
         public boolean isOrigin() {
             return true;
         }
+
+        public float azimuth() {
+            return 0;
+        }
+
+        public float elevation() {
+            return 0;
+        }
+
+        public Vec3 azimuth(float newAzimuth) {
+            return this;
+        }
+
+        public Vec3 elevation(float newElevation) {
+            return this;
+        }
+
+        public Vec2 xy() {
+            return origin2();
+        }
+
+        public String toString() {
+            return "(0, 0, 0)";
+        }
     }
 
     private static final Origin3 ORIGIN_3 = new Origin3();
@@ -1084,13 +1190,80 @@ public final class Geometry {
 
         Vec3 midpoint();
 
+        /**
+         * Changes A without affecting B.
+         */
         Line3 a(Vec3 a);
 
+        /**
+         * Changes B without affecting A.
+         */
         Line3 b(Vec3 b);
+
+        /**
+         * Changes A without affecting AB.
+         */
+        Line3 aShift(Vec3 a);
+
+        /**
+         * Changes B without affecting AB.
+         */
+        Line3 bShift(Vec3 b);
+
+        /**
+         * Changes AB without affecting A.
+         */
+        Line3 ab(Vec3 ab);
+
+        /**
+         * Elevation of AB.
+         */
+        float elevation();
+
+        /**
+         * Azimuth of AB.
+         */
+        float azimuth();
 
     }
 
-    private static class AtoB3 implements Line3 {
+    private static abstract class BaseLine3 implements Line3 {
+
+        public float mag() {
+            return ab().mag();
+        }
+
+        public Line3 a(Vec3 a) {
+            return aToB(a, b());
+        }
+
+        public Line3 b(Vec3 b) {
+            return aToB(a(), b);
+        }
+
+        public Line3 aShift(Vec3 a) {
+            return pointAndStep(a, ab());
+        }
+
+        public Line3 bShift(Vec3 b) {
+            Vec3 ab = ab();
+            return new AtoB3(b.sub(ab), b, ab);
+        }
+
+        public Line3 ab(Vec3 ab) {
+            return pointAndStep(a(), ab);
+        }
+
+        public float elevation() {
+            return ab().elevation();
+        }
+
+        public float azimuth() {
+            return ab().azimuth();
+        }
+    }
+
+    private static class AtoB3 extends BaseLine3 {
         final Vec3 a, b;
         Vec3 ab;
 
@@ -1118,10 +1291,6 @@ public final class Geometry {
             return ab;
         }
 
-        public float mag() {
-            return ab().mag();
-        }
-
         public Line3 add(Vec3 offset) {
             return new AtoB3(offset.add(a), b.add(offset), ab);
         }
@@ -1134,14 +1303,6 @@ public final class Geometry {
             return a.add(b).div(2);
         }
 
-        public Line3 a(Vec3 a) {
-            return aToB(a, b);
-        }
-
-        public Line3 b(Vec3 b) {
-            return aToB(a, b);
-        }
-
         public String toString() {
             return String.format("Line %s to %s", a, b);
         }
@@ -1149,6 +1310,129 @@ public final class Geometry {
 
     public static Line3 aToB(Vec3 a, Vec3 b) {
         return new AtoB3(a, b);
+    }
+
+    private static class AzimuthAndElevation extends BaseVec3 {
+
+        final float azimuth, elevation, mag;
+        Vec3 xyz;
+
+        private AzimuthAndElevation(float azimuth, float elevation, float mag) {
+            this.azimuth = mod2pi(azimuth);
+            this.elevation = Geometry.elevation(elevation);
+            this.mag = mag;
+        }
+
+        public float azimuth() {
+            return azimuth;
+        }
+
+        public float elevation() {
+            return elevation;
+        }
+
+        Vec3 xyz() {
+            if (xyz == null) {
+                double cosAzimuth = cos(azimuth), cosElevation = cos(elevation),
+                    sinAzimuth = sin(azimuth), sinElevation = sin(elevation);
+                xyz = Geometry.xyz(
+                    cosElevation * cosAzimuth,
+                    cosElevation * sinAzimuth,
+                    sinElevation
+                ).mag(mag);
+            }
+            return xyz;
+        }
+
+        public float x() {
+            return xyz().x();
+        }
+
+        public float y() {
+            return xyz().y();
+        }
+
+        public float z() {
+            return xyz().z();
+        }
+
+        public float mag() {
+            return mag;
+        }
+
+        public float magSquared() {
+            return mag*mag;
+        }
+
+        public Vec3 mag(float newMag) {
+            return azimuthAndElevation(azimuth, elevation, mag);
+        }
+
+        public Vec3 mult(float factor) {
+            return azimuthAndElevation(azimuth, elevation, mag*factor);
+        }
+
+        public Vec3 div(float divisor) {
+            return azimuthAndElevation(azimuth, elevation, mag / divisor);
+        }
+
+        public Vec3 rot90xy() {
+            return xyz().rot90xy();
+        }
+
+        public Vec2 xy() {
+            return angleVec2(azimuth, mag);
+        }
+    }
+
+    /**
+     * Start with (1, 0, 0).
+     * Rotate by the azimuth angle on the XY plane.
+     * Rotate toward the Z axis by the elevation angle.
+     */
+    public static Vec3 azimuthAndElevation(float azimuth, float elevation, float mag) {
+        if (mag < EPSILON) return origin3();
+        return new AzimuthAndElevation(azimuth, elevation, mag);
+    }
+
+    private static class PointAndDirection3 extends BaseLine3 {
+
+        final Vec3 a;
+        final Vec3 ab;
+
+        private PointAndDirection3(Vec3 a, Vec3 ab) {
+            this.a = a;
+            this.ab = ab;
+        }
+
+        public Vec3 a() {
+            return a;
+        }
+
+        public Vec3 b() {
+            return a.add(ab);
+        }
+
+        public Vec3 ab() {
+            return ab;
+        }
+
+        public Line3 add(Vec3 offset) {
+            return new PointAndDirection3(a.add(offset), ab);
+        }
+
+        public Line3 sub(Vec3 offset) {
+            return new PointAndDirection3(a.sub(offset), ab);
+        }
+
+        public Vec3 midpoint() {
+            return a.add(ab.div(2));
+        }
+
+    }
+
+    public static Line3 pointAndStep(Vec3 a, Vec3 ab) {
+        return new PointAndDirection3(a, ab);
     }
 
 }
