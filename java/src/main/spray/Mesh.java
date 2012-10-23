@@ -17,17 +17,17 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.*;
-import spray.Geometry.Line2;
+import spray.Geometry.Line3;
 import spray.Geometry.Side;
-import spray.Geometry.Vec2;
+import spray.Geometry.Vec3;
 
 import static com.google.common.collect.Sets.newHashSet;
 import static java.util.Arrays.asList;
 import static java.util.Collections.min;
 import static java.util.Collections.unmodifiableCollection;
-import static spray.Geometry.*;
 import static org.testng.collections.Lists.newArrayList;
 import static org.testng.collections.Maps.newHashMap;
+import static spray.Geometry.aToB;
 
 public final class Mesh {
 
@@ -66,9 +66,9 @@ public final class Mesh {
     }
 
     public void setPoints(Collection<VertexConfig> points) {
-        Delaunay d = new Delaunay(points);
+/*        Delaunay d = new Delaunay(points);
         triangles = d.triangles;
-        vertices = d.vertices;
+        vertices = d.vertices;*/
     }
 
     public Collection<Edge> edges() {
@@ -82,9 +82,9 @@ public final class Mesh {
     }
 
     public static class VertexConfig {
-        Vec2 loc;
+        Vec3 loc;
 
-        public VertexConfig(Vec2 loc) {
+        public VertexConfig(Vec3 loc) {
             this.loc = loc;
         }
     }
@@ -100,9 +100,9 @@ public final class Mesh {
             return id;
         }
 
-        private Vec2 loc;
+        private Vec3 loc;
 
-        public Vec2 loc() {
+        public Vec3 loc() {
             return loc;
         }
 
@@ -262,7 +262,7 @@ public final class Mesh {
             return asList(a(), b());
         }
 
-        public Line2 line() {
+        public Line3 line() {
             return aToB(a.loc, b.loc);
         }
 
@@ -336,14 +336,9 @@ public final class Mesh {
             return asList(new Edge(a, b), new Edge(b, c), new Edge(c, a));
         }
 
-        public List<Line2> lines() {
-            Vec2 a = this.a.vertex.loc, b = this.b.vertex.loc, c = this.c.vertex.loc;
+        public List<Line3> lines() {
+            Vec3 a = this.a.vertex.loc, b = this.b.vertex.loc, c = this.c.vertex.loc;
             return asList(aToB(a, b), aToB(b, c), aToB(c, a));
-        }
-
-        public boolean contains(Vec2 p) {
-            for (Line2 l : lines()) if (l.side(p) != Side.LEFT) return false;
-            return true;
         }
 
         public Corner earCorner() {
@@ -356,6 +351,7 @@ public final class Mesh {
             return null;
         }
     }
+/*
 
     private class Delaunay {
 
@@ -485,5 +481,6 @@ public final class Mesh {
         }
 
     }
+*/
 
 }

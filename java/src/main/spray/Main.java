@@ -8,27 +8,16 @@ import java.awt.event.MouseEvent;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Random;
 
 import javax.media.opengl.GL;
 import javax.media.opengl.glu.GLU;
 import javax.swing.Timer;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.DiscreteDomains;
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Ranges;
 import processing.core.PApplet;
 import processing.opengl.PGraphicsOpenGL;
 import thirdparty.RepeatingReleasedEventsFixer;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static spray.Geometry.*;
 import static tube.Color.black;
 import static tube.Color.white;
@@ -42,29 +31,24 @@ public class Main extends PApplet {
     GL gl;
     GLU glu;
     PGraphicsOpenGL pgogl;
-
-    // camera target point set with mouse when pressing 't'
-    Collection<Vec3> balls;
-
+    Balls balls;
     Line3 view;
-
     Robot robot;
+    Vec2 pmouse;
+    boolean robotMouseEvent;
+    final Random random = new Random();
 
     boolean[] keys = new boolean[128];
 
     void reset() {
         view = pointAndStep(xyz(0, -300, 100), xyz(0, 300, 0));
-        balls = new HashSet<Vec3>();
-        for (float x = -300; x < 300; x+= ballRadius * 2 + 1) {
-            for (float z = 0; z < 200; z+= ballRadius * 2 + 1) {
+        balls = new Balls();
+        for (float x = -300; x < 300; x+= balls.radius * 2 + 1) {
+            for (float z = 0; z < 200; z+= balls.radius * 2 + 1) {
                 balls.add(xyz(x, 0, z));
             }
         }
     }
-
-    int ballRadius = 8;
-
-    final Random random = new Random();
 
     public void setup() {
         size(900, 500, OPENGL);
@@ -128,22 +112,22 @@ public class Main extends PApplet {
         fill(color(240, 240, 240));
 
         // render sphere of radius r and center P
-        for (Vec3 ball : balls) {
+        for (Vec3 ball : balls.iter()) {
             pushMatrix();
             translate(ball.x(), ball.y(), ball.z());
-            sphere(ballRadius);
+            sphere(balls.radius);
             popMatrix();
         }
 
         if (mousePressed) {
             for (int i = 0; i < 5; i++) {
                 if (mouseButton == LEFT) {
-                    Vec3 ball = fire();
+                    Vec3 ball = balls.rayPack(ray(0.1f));
                     if (ball != null) {
                         balls.add(ball);
                     }
                 } else {
-                    Vec3 ball = unfire();
+                    Vec3 ball = balls.raySearch(ray(0.07f));
                     if (ball != null) {
                         balls.remove(ball);
                     }
@@ -190,131 +174,9 @@ public class Main extends PApplet {
         );
     }
 
-    Vec3 rayHitBall(final Line3 ray) {
-        try {
-            return Ordering.natural()
-                .onResultOf(
-                    new Function<Vec3, Float>() {
-                        public Float apply(Vec3 ball) {
-                            return distance(ball, ray.a());
-                        }
-                    }
-                )
-                .min(
-                    FluentIterable.from(balls)
-                        .filter(new Predicate<Vec3>() {
-                            public boolean apply(Vec3 ball) {
-                                return distance(ray, ball) < ballRadius + 1;
-                            }
-                        })
-                );
-        } catch (NoSuchElementException e) {
-            return null;
-        }
-    }
-
-    Vec3 unfire() {
-        Line3 ray = ray(0.07f);
-        return rayHitBall(ray);
-    }
-
-    Vec3 fire() {
-
-        final Line3 ray = ray(0.1f);
-
-        final Vec3 c1 = rayHitBall(ray);
-        if (c1 == null) {
-            return null;
-        }
-
-        final List<Vec3> closeBalls = newArrayList(FluentIterable.from(balls)
-            .filter(new Predicate<Vec3>() {
-                public boolean apply(Vec3 ball) {
-                    float d = distance(c1, ball);
-                    return d > 0.1 && d < ballRadius * 4;
-                }
-            }));
-
-        final Vec3 ball1 = c1.add(view.ab().mag(-1 * ballRadius));
-
-        final Line3 axis1 = pointAndStep(c1, view.ab().orthog());
-
-        Vec3[] ballAndC2 = FluentIterable
-            .from(Ranges.closedOpen(0, 1000).asSet(DiscreteDomains.integers()))
-            .transform(new Function<Integer, Vec3>() {
-                public Vec3 apply(Integer i) {
-                    float angle = (float) (i / 1000.) * 2 * PI;
-                    return rotatePointAroundLine(axis1, ball1, angle);
-                }
-            })
-            .transformAndConcat(new Function<Vec3, Iterable<Vec3[]>>() {
-                public Iterable<Vec3[]> apply(final Vec3 ball2) {
-                    return FluentIterable
-                        .from(closeBalls)
-                        .filter(new Predicate<Vec3>() {
-                            public boolean apply(Vec3 closeBall) {
-                                return distance(ball2, closeBall) < ballRadius + 1;
-                            }
-                        })
-                        .transform(new Function<Vec3, Vec3[]>() {
-                            public Vec3[] apply(Vec3 closeBall) {
-                                return new Vec3[]{ball2, closeBall};
-                            }
-                        });
-                }
-            })
-            .first()
-            .orNull();
-
-        final Vec3 ball2;
-        Vec3 c2;
-        if (ballAndC2 != null) {
-            ball2 = ballAndC2[0];
-            c2 = ballAndC2[1];
-        } else {
-            ball2 = ball1;
-            c2 = null;
-        }
-
-        Vec3 ball3;
-        if (c2 == null) {
-            ball3 = ball2;
-        } else {
-            closeBalls.remove(c2);
-            final Line3 axis2 = aToB(c1, c2);
-            return FluentIterable
-                .from(Ranges.closedOpen(0, 1000).asSet(DiscreteDomains.integers()))
-                .transform(new Function<Integer, Vec3>() {
-                    public Vec3 apply(Integer i) {
-                        float angle = (float) (i / 1000.) * 2 * PI;
-                        return rotatePointAroundLine(axis2, ball2, angle);
-                    }
-                })
-                .filter(new Predicate<Vec3>() {
-                    public boolean apply(final Vec3 ball3) {
-                        return FluentIterable
-                            .from(closeBalls)
-                            .anyMatch(new Predicate<Vec3>() {
-                                public boolean apply(Vec3 closeBall) {
-                                    return distance(ball3, closeBall) < ballRadius + 2;
-                                }
-                            });
-                    }
-                })
-                .first()
-                .or(ball2);
-        }
-
-        return ball3;
-    }
-
-    Vec2 pmouse;
-
     public void mouseDragged(MouseEvent e) {
         mouseMoved(e);
     }
-
-    boolean robotMouseEvent;
 
     public void mouseMoved(MouseEvent e) {
 
