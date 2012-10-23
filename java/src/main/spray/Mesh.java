@@ -31,7 +31,7 @@ import static org.testng.collections.Maps.newHashMap;
 
 public final class Mesh {
 
-    private int previousVertexId, previousTriangleId;
+    int previousVertexId, previousTriangleId;
 
     List<Triangle> triangles = newArrayList();
 
@@ -45,24 +45,12 @@ public final class Mesh {
         return unmodifiableCollection(vertices);
     }
 
-    private LoadingCache<Edge, Float> springLength = CacheBuilder.newBuilder().build(
-        new CacheLoader<Edge, Float>() {
-            public Float load(Edge edge) {
-                return edge.a.loc.sub(edge.b.loc).mag();
-            }
-        });
-
     public Mesh() {
     }
 
     public Mesh(Collection<VertexConfig> points) {
         setPoints(points);
     }
-
-    private static final float GRAVITY = 0.04f;
-    private static final float SPRING = .05f;
-    private static final float INERTIA = 12f;
-    private static final float DAMPING = .001f;
 
     private boolean meshIsValid() {
         for (Vertex v : vertices) {
@@ -81,7 +69,6 @@ public final class Mesh {
         Delaunay d = new Delaunay(points);
         triangles = d.triangles;
         vertices = d.vertices;
-        lastCutVertex = null;
     }
 
     public Collection<Edge> edges() {
@@ -90,218 +77,15 @@ public final class Mesh {
         return edges;
     }
 
-    public void physics(float timeStep) {
-        for (Vertex v : vertices) {
-            v.nextVelocity = v.velocity;
-        }
-        Collections.shuffle(vertices);
-        for (int i = 0; i < 20; i++) {
-            for (Vertex v : vertices) {
-                if (v.physics == VertexPhysics.FREE) {
-                    Vec2 accel = xy(0, GRAVITY);
-                    List<Vertex> adjs = newArrayList();
-                    for (Corner c : v.corners()) adjs.add(c.next().vertex());
-                    Collections.shuffle(adjs);
-                    for (Vertex adj : adjs) {
-                        float desiredLength = springLength.getUnchecked(new Edge(v, adj));
-                        float actualLength = adj.nextPosition(timeStep).sub(v.nextPosition(timeStep)).mag();
-                        float stretch = actualLength - desiredLength;
-                        accel = accel.add(adj.loc.sub(v.loc).mag(stretch * SPRING));
-                    }
-                    v.nextVelocity = v.velocity.mult(INERTIA - 1).add(accel).div(INERTIA);
-                    v.nextVelocity = v.nextVelocity.mag(Math.max(0, v.nextVelocity.mag() - DAMPING));
-                }
-            }
-        }
-        for (Vertex v : vertices) {
-            v.loc = v.nextPosition(timeStep);
-            v.velocity = v.nextVelocity;
-            v.nextVelocity = null;
-        }
-    }
-
     boolean exists(Edge e) {
         return vertices.contains(e.a) & vertices.contains(e.b);
     }
 
-    public void remove(Line2 motion) {
-        for (Mesh.Edge e : edges()) if (overlap(e.line(), motion)) remove(e);
-    }
-
-    public void remove(Edge e) {
-        if (!exists(e)) return;
-        for (Triangle t : e.triangles()) remove(t);
-    }
-
-    public void remove(Triangle t) {
-        for (Corner c : t.corners()) {
-            c.swings.prev.corner.swings.next = new Swing(c.swings.next.corner, true);
-            c.swings.next.corner.swings.prev = new Swing(c.swings.prev.corner, true);
-        }
-        for (Corner c : t.corners()) if (c.vertex.corner == c) c.vertex.corner = c.swings.next.corner;
-        assert meshIsValid();
-        for (Corner c : t.corners()) {
-            if (c.swings.next.corner == c) {
-                vertices.remove(c.vertex);
-            } else {
-                ensureManifold(c.vertex);
-            }
-        }
-        triangles.remove(t);
-        assert meshIsValid();
-    }
-
-    Vertex lastCutVertex;
-
-    public void stopCutting() {
-        lastCutVertex = null;
-    }
-
-    public void cut(Line2 cut) {
-        List<Line2> ms = Lists.newArrayList(cut);
-        while (ms.get(0).mag() > 1) {
-            List<Line2> ms2 = Lists.newArrayList();
-            for (Line2 $ : ms) {
-                ms2.add(aToB($.a(), $.midpoint()));
-                ms2.add(aToB($.midpoint(), $.b()));
-            }
-            ms = ms2;
-        }
-        for (Line2 $ : ms) for (Mesh.Edge e : edges()) if (overlap(e.line(), $)) cut(e, $);
-    }
-
-    public void cut(final Edge e, final Line2 cut) {
-        if (!exists(e)) return;
-
-        List<Triangle> ts = e.triangles();
-        if (ts.size() == 0) return;
-
-        final Vertex nv = new Vertex(new VertexConfig(intersect(cut, e.line()), VertexPhysics.FREE));
-        vertices.add(nv);
-        float springFraction = e.a.loc.sub(nv.loc).mag() / e.a.loc.sub(e.b.loc).mag();
-        springLength.put(new Edge(e.a, nv), springLength.getUnchecked(new Edge(e.a, e.b)) * springFraction);
-        springLength.put(new Edge(e.b, nv), springLength.getUnchecked(new Edge(e.a, e.b)) * (1 - springFraction));
-
-        class OldTriangle {
-            Triangle x, y;
-            Corner splitCorner;
-
-            OldTriangle(Triangle t) {
-                triangles.remove(t);
-                splitCorner = Iterables.find(t.corners(), new Predicate<Corner>() {
-                    public boolean apply(Corner c) {
-                        return !e.vertices().contains(c.vertex);
-                    }
-                });
-                x = new Triangle(nv, splitCorner.prev.vertex, splitCorner.vertex);
-                y = new Triangle(nv, splitCorner.vertex, splitCorner.next.vertex);
-                triangles.add(x);
-                triangles.add(y);
-                setSwing(x.a, y.a);
-                setSwing(splitCorner.prev.swings.prev.corner, x.b, splitCorner.prev.swings.prev.isSuper);
-                setSwing(y.c, splitCorner.next.swings.next.corner, splitCorner.next.swings.next.isSuper);
-                setSwing(x.c, splitCorner.swings.next.corner, splitCorner.swings.next.isSuper);
-                setSwing(splitCorner.swings.prev.corner, y.b, splitCorner.swings.prev.isSuper);
-                setSwing(y.b, x.c);
-                splitCorner.vertex.corner = x.c;
-                splitCorner.prev.vertex.corner = x.b;
-                splitCorner.next.vertex.corner = y.c;
-            }
-        }
-        List<OldTriangle> ots = newArrayList();
-        for (Triangle t : ts) ots.add(new OldTriangle(t));
-        if (ots.size() == 2) {
-            for (int i = 0; i < 2; i++) {
-                OldTriangle t1 = ots.get(i), t2 = ots.get((i + 1) % 2);
-                setSwing(t1.x.b, t2.y.c);
-                setSwing(t2.y.a, t1.x.a);
-            }
-        } else {
-            OldTriangle t1 = ots.get(0);
-            setSwing(t1.x.b, t1.splitCorner.prev.swings.next.corner, t1.splitCorner.prev.swings.next.isSuper);
-            setSwing(t1.splitCorner.next.swings.prev.corner, t1.y.c, t1.splitCorner.next.swings.prev.isSuper);
-            setSwing(t1.y.a, t1.x.a, true);
-        }
-        nv.corner = ots.get(0).x.a;
-        assert meshIsValid();
-        if (lastCutVertex != null) {
-            for (Corner c : lastCutVertex.corners()) {
-                if (c.next.vertex == nv) {
-                    setSwing(c.swings.prev.corner, true);
-                    setSwing(c.next, true);
-                    ensureManifold(c.vertex);
-                    ensureManifold(c.next.vertex);
-                    break;
-                }
-            }
-        }
-        lastCutVertex = nv;
-        assert meshIsValid();
-    }
-
-    private void ensureManifold(final Vertex v) {
-        new Object() {
-            List<List<Corner>> sections = Lists.newArrayList();
-            List<Corner> currentSection;
-            Corner currentCorner = v.corner;
-
-            void newSection() {
-                sections.add(currentSection = Lists.<Corner>newArrayList());
-            }
-
-            {
-                newSection();
-                do {
-                    currentSection.add(currentCorner);
-                    Swing swing = currentCorner.swings.next;
-                    if (swing.isSuper) newSection();
-                    currentCorner = swing.corner;
-                } while (currentCorner != v.corner);
-                sections.get(sections.size() - 1).addAll(sections.get(0));
-                sections.remove(0);
-                splitNonManifold(v, sections);
-            }
-        };
-    }
-
-    private List<Vertex> splitNonManifold(Vertex v, List<List<Corner>> sections) {
-        assert Sets.<Corner>newHashSet(Iterables.concat(sections)).size() ==
-            Lists.<Corner>newArrayList(Iterables.concat(sections)).size();
-        List<Vertex> resultingVertices = newArrayList(v);
-        if (sections.size() > 1) {
-            for (int i = 0; i < sections.size(); i++) {
-                List<Corner> section = sections.get(i);
-                Corner first = section.get(0), last = section.get(section.size() - 1);
-                setSwing(last, first, true);
-                setSwing(first.next, true);
-                setSwing(last.prev.swings.prev.corner, true);
-                if (i != 0) {
-                    Vertex clone = new Vertex(new VertexConfig(v.loc, v.physics));
-                    clone.corner = first;
-                    vertices.add(clone);
-                    resultingVertices.add(clone);
-                    for (Corner c : section) c.vertex = clone;
-                } else {
-                    v.corner = first;
-                }
-            }
-        }
-        for (Vertex rv : resultingVertices) {
-            assert rv.corner.vertex == rv;
-            assert Lists.<Corner>newArrayList(rv.corners()) != null;
-        }
-        return resultingVertices;
-    }
-
-    public enum VertexPhysics {PINNED, FREE}
-
     public static class VertexConfig {
         Vec2 loc;
-        VertexPhysics physics;
 
-        public VertexConfig(Vec2 loc, VertexPhysics physics) {
+        public VertexConfig(Vec2 loc) {
             this.loc = loc;
-            this.physics = physics;
         }
     }
 
@@ -322,23 +106,14 @@ public final class Mesh {
             return loc;
         }
 
-        private final VertexPhysics physics;
-
         private Vertex(VertexConfig config) {
             this.loc = config.loc;
-            this.physics = config.physics;
         }
 
         private Corner corner;
 
         public Corner corner() {
             return corner;
-        }
-
-        private Vec2 velocity = origin2(), nextVelocity;
-
-        Vec2 nextPosition(float timeStep) {
-            return nextVelocity.mult(timeStep).add(loc);
         }
 
         public Iterable<Corner> corners() {

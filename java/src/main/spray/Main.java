@@ -1,5 +1,23 @@
 package spray;
 
+import java.awt.AWTException;
+import java.awt.Robot;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Random;
+
+import javax.media.opengl.GL;
+import javax.media.opengl.glu.GLU;
+import javax.swing.Timer;
+
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.DiscreteDomains;
@@ -10,27 +28,10 @@ import processing.core.PApplet;
 import processing.opengl.PGraphicsOpenGL;
 import thirdparty.RepeatingReleasedEventsFixer;
 
-import javax.media.opengl.GL;
-import javax.media.opengl.glu.GLU;
-import javax.swing.Timer;
-import java.awt.AWTException;
-import java.awt.Robot;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Random;
-
 import static com.google.common.collect.Lists.newArrayList;
 import static spray.Geometry.*;
-import static tube.Color.*;
+import static tube.Color.black;
+import static tube.Color.white;
 
 public class Main extends PApplet {
 
