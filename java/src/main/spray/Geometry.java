@@ -1360,9 +1360,9 @@ public final class Geometry {
         Vec3 xyz;
 
         private AzimuthAndElevation(float azimuth, float elevation, float mag) {
-            this.azimuth = mod2pi(azimuth);
-            this.elevation = Geometry.elevation(elevation);
-            this.mag = mag;
+            this.azimuth = mod2pi(azimuth, mag < 0);
+            this.elevation = Geometry.elevation(elevation) * sign(mag);
+            this.mag = abs(mag);
         }
 
         public float azimuth() {
@@ -1407,11 +1407,11 @@ public final class Geometry {
         }
 
         public Vec3 mag(float newMag) {
-            return azimuthAndElevation(azimuth, elevation, mag);
+            return azimuthAndElevation(azimuth, elevation, newMag);
         }
 
         public Vec3 mult(float factor) {
-            return azimuthAndElevation(azimuth, elevation, mag*factor);
+            return azimuthAndElevation(azimuth, elevation, mag * factor);
         }
 
         public Vec3 div(float divisor) {
@@ -1433,7 +1433,7 @@ public final class Geometry {
      * Rotate toward the Z axis by the elevation angle.
      */
     public static Vec3 azimuthAndElevation(float azimuth, float elevation, float mag) {
-        if (mag < EPSILON) return origin3();
+        if (abs(mag) < EPSILON) return origin3();
         return new AzimuthAndElevation(azimuth, elevation, mag);
     }
 
