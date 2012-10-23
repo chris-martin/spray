@@ -22,6 +22,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
@@ -41,7 +43,7 @@ public class Main extends PApplet {
     PGraphicsOpenGL pgogl;
 
     // camera target point set with mouse when pressing 't'
-    List<Vec3> balls;
+    Collection<Vec3> balls;
 
     Line3 view;
 
@@ -51,7 +53,7 @@ public class Main extends PApplet {
 
     void reset() {
         view = pointAndStep(xyz(0, -300, 100), xyz(0, 300, 0));
-        balls = new ArrayList<Vec3>();
+        balls = new HashSet<Vec3>();
         for (float x = -300; x < 300; x+= ballRadius * 2 + 1) {
             for (float z = 0; z < 200; z+= ballRadius * 2 + 1) {
                 balls.add(xyz(x, 0, z));
@@ -134,9 +136,16 @@ public class Main extends PApplet {
 
         if (mousePressed) {
             for (int i = 0; i < 5; i++) {
-                Vec3 ball = fire();
-                if (ball != null) {
-                    balls.add(ball);
+                if (mouseButton == LEFT) {
+                    Vec3 ball = fire();
+                    if (ball != null) {
+                        balls.add(ball);
+                    }
+                } else {
+                    Vec3 ball = unfire();
+                    if (ball != null) {
+                        balls.remove(ball);
+                    }
                 }
             }
         }
@@ -164,11 +173,10 @@ public class Main extends PApplet {
         }
     }
 
-    Vec3 fire() {
-
-        float spread = (float) random.nextGaussian() / 10;
+    Line3 ray(float spread) {
+        spread *= (float) random.nextGaussian();
         float rotationAngle = random.nextFloat() * 2 * PI;
-        final Line3 ray = view.b(
+        return view.b(
             rotatePointAroundLine(
                 view,
                 rotatePointAroundLine(
@@ -179,10 +187,11 @@ public class Main extends PApplet {
                 rotationAngle
             )
         );
+    }
 
-        final Vec3 c1;
+    Vec3 rayHitBall(final Line3 ray) {
         try {
-            c1 = Ordering.natural()
+            return Ordering.natural()
                 .onResultOf(
                     new Function<Vec3, Float>() {
                         public Float apply(Vec3 ball) {
@@ -199,6 +208,21 @@ public class Main extends PApplet {
                         })
                 );
         } catch (NoSuchElementException e) {
+            return null;
+        }
+    }
+
+    Vec3 unfire() {
+        Line3 ray = ray(0.07f);
+        return rayHitBall(ray);
+    }
+
+    Vec3 fire() {
+
+        final Line3 ray = ray(0.1f);
+
+        final Vec3 c1 = rayHitBall(ray);
+        if (c1 == null) {
             return null;
         }
 
