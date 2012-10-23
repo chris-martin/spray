@@ -14,6 +14,7 @@ import javax.media.opengl.GL;
 import javax.media.opengl.glu.GLU;
 import javax.swing.Timer;
 
+import com.google.common.collect.FluentIterable;
 import processing.core.PApplet;
 import processing.opengl.PGraphicsOpenGL;
 import thirdparty.RepeatingReleasedEventsFixer;
@@ -31,7 +32,7 @@ public class Main extends PApplet {
     GL gl;
     GLU glu;
     PGraphicsOpenGL pgogl;
-    Balls balls;
+    Balls<Vec3> balls;
     Line3 view;
     Robot robot;
     Vec2 pmouse;
@@ -42,10 +43,13 @@ public class Main extends PApplet {
 
     void reset() {
         view = pointAndStep(xyz(0, -300, 100), xyz(0, 300, 0));
-        balls = new Balls();
+        balls = new Balls<Vec3>();
         for (float x = -300; x < 300; x+= balls.radius * 2 + 1) {
             for (float z = 0; z < 200; z+= balls.radius * 2 + 1) {
-                balls.add(xyz(x, 0, z));
+                balls.balls.add(xyz(
+                    x + random.nextFloat(),
+                    0 + random.nextFloat(),
+                    z + random.nextFloat()));
             }
         }
     }
@@ -112,7 +116,7 @@ public class Main extends PApplet {
         fill(color(240, 240, 240));
 
         // render sphere of radius r and center P
-        for (Vec3 ball : balls.iter()) {
+        for (Vec3 ball : FluentIterable.from(balls.balls)) {
             pushMatrix();
             translate(ball.x(), ball.y(), ball.z());
             sphere(balls.radius);
@@ -124,12 +128,12 @@ public class Main extends PApplet {
                 if (mouseButton == LEFT) {
                     Vec3 ball = balls.rayPack(ray(0.1f));
                     if (ball != null) {
-                        balls.add(ball);
+                        balls.balls.add(ball);
                     }
                 } else {
                     Vec3 ball = balls.raySearch(ray(0.07f));
                     if (ball != null) {
-                        balls.remove(ball);
+                        balls.balls.remove(ball);
                     }
                 }
             }
@@ -159,7 +163,7 @@ public class Main extends PApplet {
     }
 
     Line3 ray(float spread) {
-        spread *= (float) random.nextGaussian();
+        spread *= (float) Math.max(.5, random.nextGaussian());
         float rotationAngle = random.nextFloat() * 2 * PI;
         return view.b(
             rotatePointAroundLine(

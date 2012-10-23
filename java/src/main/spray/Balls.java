@@ -7,10 +7,9 @@ import java.util.Set;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import com.google.common.collect.DiscreteDomains;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Ordering;
-import com.google.common.collect.Ranges;
+import spray.Geometry.IsVec3;
 import spray.Geometry.Line3;
 import spray.Geometry.Vec3;
 
@@ -18,44 +17,39 @@ import static com.google.common.collect.Lists.newArrayList;
 import static spray.Geometry.aToB;
 import static spray.Geometry.distance;
 import static spray.Geometry.pointAndStep;
-import static spray.Geometry.rotatePointAroundLine;
 
-public class Balls {
+public class Balls<V extends IsVec3> {
 
-    private final Set<Vec3> balls = new HashSet<Vec3>();
+    public final Set<V> balls = new HashSet<V>();
 
     final int radius = 8;
 
-    public void add(Vec3 ball) {
-        balls.add(ball);
-    }
+    public Balls() { }
 
-    public void remove(Vec3 ball) {
-        balls.remove(ball);
-    }
-
-    public FluentIterable<Vec3> iter() {
-        return FluentIterable.from(balls);
+    public Balls(Iterable<V> balls) {
+        for (V ball : balls) {
+            this.balls.add(ball);
+        }
     }
 
     /**
      * Find the first ball the ray hits.
      */
-    Vec3 raySearch(final Line3 ray) {
+    V raySearch(final Line3 ray) {
         try {
             return Ordering.natural()
                 .onResultOf(
-                    new Function<Vec3, Float>() {
-                        public Float apply(Vec3 ball) {
+                    new Function<V, Float>() {
+                        public Float apply(V ball) {
                             return distance(ball, ray.a());
                         }
                     }
                 )
                 .min(
-                    iter()
-                        .filter(new Predicate<Vec3>() {
-                            public boolean apply(Vec3 ball) {
-                                return distance(ray, ball) < radius + 1;
+                    FluentIterable.from(balls)
+                        .filter(new Predicate<V>() {
+                            public boolean apply(V ball) {
+                                return distance(ray, ball) < radius;
                             }
                         })
                 );
@@ -69,43 +63,38 @@ public class Balls {
      */
     Vec3 rayPack(final Line3 ray) {
 
-        final Vec3 c1 = raySearch(ray);
+        final V c1 = raySearch(ray);
         if (c1 == null) {
             return null;
         }
 
-        final List<Vec3> closeBalls = newArrayList(iter()
-            .filter(new Predicate<Vec3>() {
-                public boolean apply(Vec3 ball) {
-                    float d = distance(c1, ball);
-                    return d > 0.1 && d < radius * 4;
-                }
-            }));
+        final List<V> closeBalls = newArrayList(
+            FluentIterable.from(balls)
+                .filter(new Predicate<V>() {
+                    public boolean apply(V ball) {
+                        float d = distance(c1, ball);
+                        return d > 0.1 && d < radius * 4;
+                    }
+                })
+        );
 
-        final Vec3 ball1 = c1.add(ray.ab().mag(-1 * radius));
+        final Vec3 ball1 = c1.asVec3().add(ray.ab().mag(-1 * radius));
 
         final Line3 axis1 = pointAndStep(c1, ray.ab().orthog());
 
-        Vec3[] ballAndC2 = FluentIterable
-            .from(Ranges.closedOpen(0, 1000).asSet(DiscreteDomains.integers()))
-            .transform(new Function<Integer, Vec3>() {
-                public Vec3 apply(Integer i) {
-                    float angle = (float) ((i / 1000.) * 2 * Math.PI);
-                    return rotatePointAroundLine(axis1, ball1, angle);
-                }
-            })
-            .transformAndConcat(new Function<Vec3, Iterable<Vec3[]>>() {
-                public Iterable<Vec3[]> apply(final Vec3 ball2) {
+        Object[] ballAndC2 = Approximation.samplePointsAroundLine(axis1, ball1)
+            .transformAndConcat(new Function<Vec3, Iterable<Object[]>>() {
+                public Iterable<Object[]> apply(final Vec3 ball2) {
                     return FluentIterable
                         .from(closeBalls)
-                        .filter(new Predicate<Vec3>() {
-                            public boolean apply(Vec3 closeBall) {
+                        .filter(new Predicate<V>() {
+                            public boolean apply(V closeBall) {
                                 return distance(ball2, closeBall) < radius + 1;
                             }
                         })
-                        .transform(new Function<Vec3, Vec3[]>() {
-                            public Vec3[] apply(Vec3 closeBall) {
-                                return new Vec3[]{ball2, closeBall};
+                        .transform(new Function<V, Object[]>() {
+                            public Object[] apply(V closeBall) {
+                                return new Object[]{ ball2, closeBall };
                             }
                         });
                 }
@@ -114,10 +103,10 @@ public class Balls {
             .orNull();
 
         final Vec3 ball2;
-        Vec3 c2;
+        V c2;
         if (ballAndC2 != null) {
-            ball2 = ballAndC2[0];
-            c2 = ballAndC2[1];
+            ball2 = (Vec3) ballAndC2[0];
+            c2 = (V) ballAndC2[1];
         } else {
             ball2 = ball1;
             c2 = null;
@@ -129,20 +118,13 @@ public class Balls {
         } else {
             closeBalls.remove(c2);
             final Line3 axis2 = aToB(c1, c2);
-            return FluentIterable
-                .from(Ranges.closedOpen(0, 1000).asSet(DiscreteDomains.integers()))
-                .transform(new Function<Integer, Vec3>() {
-                    public Vec3 apply(Integer i) {
-                        float angle = (float) ((i / 1000.) * 2 * Math.PI);
-                        return rotatePointAroundLine(axis2, ball2, angle);
-                    }
-                })
+            ball3 = Approximation.samplePointsAroundLine(axis2, ball2)
                 .filter(new Predicate<Vec3>() {
                     public boolean apply(final Vec3 ball3) {
                         return FluentIterable
                             .from(closeBalls)
-                            .anyMatch(new Predicate<Vec3>() {
-                                public boolean apply(Vec3 closeBall) {
+                            .anyMatch(new Predicate<V>() {
+                                public boolean apply(V closeBall) {
                                     return distance(ball3, closeBall) < radius + 2;
                                 }
                             });

@@ -798,7 +798,7 @@ public final class Geometry {
     /**
      * A point in three dimensions.
      */
-    public static interface Vec3 extends Comparable<Vec3> {
+    public static interface Vec3 extends IsVec3, Comparable<Vec3> {
 
         float x();
 
@@ -957,6 +957,10 @@ public final class Geometry {
 
         public String toString() {
             return String.format("(%f, %f, %f)", x(), y(), z());
+        }
+
+        public Vec3 asVec3() {
+            return this;
         }
     }
 
@@ -1179,6 +1183,10 @@ public final class Geometry {
         public String toString() {
             return "(0, 0, 0)";
         }
+
+        public Vec3 asVec3() {
+            return this;
+        }
     }
 
     private static final Origin3 ORIGIN_3 = new Origin3();
@@ -1193,6 +1201,10 @@ public final class Geometry {
 
     public static float distance(Vec3 a, Vec3 b) {
         return a.sub(b).mag();
+    }
+
+    public static float distance(IsVec3 a, IsVec3 b) {
+        return a.asVec3().sub(b.asVec3()).mag();
     }
 
     public static Vec2 midpoint(Vec2 a, Vec2 b) {
@@ -1350,6 +1362,10 @@ public final class Geometry {
         }
     }
 
+    public static Line3 aToB(IsVec3 a, IsVec3 b) {
+        return aToB(a.asVec3(), b.asVec3());
+    }
+
     public static Line3 aToB(Vec3 a, Vec3 b) {
         return new AtoB3(a, b);
     }
@@ -1477,8 +1493,16 @@ public final class Geometry {
         return new PointAndDirection3(a, ab);
     }
 
+    public static Line3 pointAndStep(IsVec3 a, IsVec3 ab) {
+        return new PointAndDirection3(a.asVec3(), ab.asVec3());
+    }
+
     public static Line3 oTo3(Vec3 b) {
         return aToB(origin3(), b);
+    }
+
+    public static float distance(Line3 line, IsVec3 c) {
+        return distance(line, c.asVec3());
     }
 
     public static float distance(Line3 line, Vec3 c) {
@@ -1505,6 +1529,10 @@ public final class Geometry {
             { uy*ux*(1-cosa)+uz*sina, cosa+uy*uy*(1-cosa), uy*uz*(1-cosa)-ux*sina },
             { uz*ux*(1-cosa)-uy*sina, uz*uy*(1-cosa)+ux*sina, cosa+uz*uz*(1-cosa) }
         };
+    }
+
+    public static Vec3 rotatePointAroundLine(Line3 line, IsVec3 c, float angle) {
+        return rotatePointAroundLine(line, c.asVec3(), angle);
     }
 
     public static Vec3 rotatePointAroundLine(Line3 line, Vec3 c, float angle) {
@@ -1547,6 +1575,10 @@ public final class Geometry {
 
     public static Sphere sphere(Vec3 center, float radius) {
         return new SimpleSphere(center, radius);
+    }
+
+    public static Sphere sphere(IsVec3 center, float radius) {
+        return sphere(center.asVec3(), radius);
     }
 
     public interface Circle3 {
@@ -1623,6 +1655,10 @@ public final class Geometry {
         return asList(circle(center, ab.ab(), rad));
     }
 
+    public interface IsVec3 {
 
+        Vec3 asVec3();
+
+    }
 
 }

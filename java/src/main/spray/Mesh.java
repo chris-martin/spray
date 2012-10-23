@@ -2,32 +2,32 @@ package spray;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.collect.*;
+import com.google.common.base.Predicates;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import spray.Geometry.IsVec3;
 import spray.Geometry.Line3;
 import spray.Geometry.Side;
+import spray.Geometry.Vec2;
 import spray.Geometry.Vec3;
 
 import static com.google.common.collect.Sets.newHashSet;
 import static java.util.Arrays.asList;
-import static java.util.Collections.min;
 import static java.util.Collections.unmodifiableCollection;
 import static org.testng.collections.Lists.newArrayList;
-import static org.testng.collections.Maps.newHashMap;
 import static spray.Geometry.aToB;
+import static spray.Geometry.distance;
+import static spray.Geometry.sphere;
 
 public final class Mesh {
 
@@ -48,8 +48,8 @@ public final class Mesh {
     public Mesh() {
     }
 
-    public Mesh(Collection<VertexConfig> points) {
-        setPoints(points);
+    public Mesh(Balls<?> balls) {
+        setBalls(balls);
     }
 
     private boolean meshIsValid() {
@@ -65,10 +65,24 @@ public final class Mesh {
         return true;
     }
 
-    public void setPoints(Collection<VertexConfig> points) {
-/*        Delaunay d = new Delaunay(points);
-        triangles = d.triangles;
-        vertices = d.vertices;*/
+    public void setBalls(Balls<?> balls) {
+
+        Balls<Vertex> vBalls = new Balls<Vertex>(
+            FluentIterable.from(balls.balls).transform(new Function<IsVec3, Vertex>() {
+                public Vertex apply(IsVec3 point) {
+                    return new Vertex(point.asVec3());
+                }
+            })
+        );
+
+        while (vertices.size() != 0) {
+            Builder builder = new Builder(vBalls);
+            triangles.addAll(builder.triangles);
+            for (Vertex v : builder.vertices) {
+                vBalls.balls.remove(v);
+            }
+        }
+
     }
 
     public Collection<Edge> edges() {
@@ -81,15 +95,8 @@ public final class Mesh {
         return vertices.contains(e.a) & vertices.contains(e.b);
     }
 
-    public static class VertexConfig {
-        Vec3 loc;
+    public class Vertex implements IsVec3 {
 
-        public VertexConfig(Vec3 loc) {
-            this.loc = loc;
-        }
-    }
-
-    public class Vertex {
         private final int id = ++previousVertexId;
 
         public int id() {
@@ -102,12 +109,12 @@ public final class Mesh {
 
         private Vec3 loc;
 
-        public Vec3 loc() {
+        public Vec3 asVec3() {
             return loc;
         }
 
-        private Vertex(VertexConfig config) {
-            this.loc = config.loc;
+        private Vertex(Vec3 loc) {
+            this.loc = loc;
         }
 
         private Corner corner;
@@ -242,6 +249,7 @@ public final class Mesh {
     }
 
     public class Edge {
+
         private final Vertex a, b;
 
         private Edge(Vertex a, Vertex b) {
@@ -283,6 +291,36 @@ public final class Mesh {
             for (Corner c : b.corners()) if (c.next.vertex == a) c2 = c;
             if (c2 != null) ts.add(c2.triangle);
             return ts;
+        }
+    }
+
+    public class DirectedEdge {
+
+        private final Vertex a, b;
+
+        private DirectedEdge(Vertex a, Vertex b) {
+            this.a = a;
+            this.b = b;
+        }
+
+        public Vertex a() {
+            return a;
+        }
+
+        public Vertex b() {
+            return b;
+        }
+
+        public boolean equals(Object o) {
+            return this == o || (o instanceof Edge && a == ((Edge) o).a && b == ((Edge) o).b);
+        }
+
+        public int hashCode() {
+            return 31 * a.hashCode() + b.hashCode();
+        }
+
+        public Line3 line() {
+            return aToB(a.loc, b.loc);
         }
     }
 
@@ -331,6 +369,15 @@ public final class Mesh {
             return asList(a, b, c);
         }
 
+        public FluentIterable<Vertex> vertices() {
+            return FluentIterable.from(corners())
+                .transform(new Function<Corner, Vertex>() {
+                    public Vertex apply(Corner corner) {
+                        return corner.vertex;
+                    }
+                });
+        }
+
         public List<Edge> edges() {
             Vertex a = this.a.vertex, b = this.b.vertex, c = this.c.vertex;
             return asList(new Edge(a, b), new Edge(b, c), new Edge(c, a));
@@ -351,66 +398,135 @@ public final class Mesh {
             return null;
         }
     }
-/*
 
-    private class Delaunay {
+    private class OpenEdge {
 
-        List<Triangle> triangles = newArrayList();
-        List<Vertex> vertices = newArrayList();
-        List<Edge> edges = newArrayList();
-        List<Edge> convexHull = newArrayList();
-        Map<Edge, Vertex> openEdges = newHashMap();
+        final DirectedEdge edge;
+        final Vec3 rollFrom;
 
-        Delaunay(Collection<VertexConfig> points) {
-            if (points.size() < 3) throw new IllegalArgumentException();
-            for (VertexConfig p : points) vertices.add(new Vertex(p));
-            calculateConvexHull();
-            for (Edge edge : convexHull.subList(0, 1)) {
-                edges.add(edge);
-                openEdges.put(edge, null);
-            }
-            while (openEdges.size() != 0) tryNextEdge();
-            calculateSwing();
+        private OpenEdge(DirectedEdge edge, Vec3 rollFrom) {
+            this.edge = edge;
+            this.rollFrom = rollFrom;
         }
 
-        void calculateConvexHull() {
-            final Vertex start = min(vertices, new Comparator<Vertex>() {
-                public int compare(Vertex i, Vertex j) {
-                    return Float.compare(key(i), key(j));
-                }
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            OpenEdge openEdge = (OpenEdge) o;
+            return edge.equals(openEdge.edge);
+        }
 
-                float key(Vertex v) {
-                    return v.loc().y();
-                }
-            });
-            Vertex a = start;
-            while (true) {
-                final Vertex a$ = a;
-                Vertex b = min(vertices, new Comparator<Vertex>() {
-                    public int compare(Vertex i, Vertex j) {
-                        return Float.compare(key(i), key(j));
-                    }
+        public int hashCode() {
+            return edge != null ? edge.hashCode() : 0;
+        }
+    }
 
-                    float key(Vertex v) {
-                        return v == a$ ? Float.MAX_VALUE : (v.loc().sub(a$.loc())).ang();
+    private static class RollingCollision {
+
+        final Vec3 rolling;
+        final Vertex vertex;
+
+        private RollingCollision(Vec3 rolling, Vertex vertex) {
+            this.rolling = rolling;
+            this.vertex = vertex;
+        }
+
+    }
+
+    private static <T> Predicate<T> sameAs(final T t) {
+        return new Predicate<T>() {
+            public boolean apply(T s) {
+                return t == s;
+            }
+        };
+    }
+
+    private static <V extends IsVec3> Predicate<V> ballsAreTouching(final IsVec3 p, final float radius) {
+        return new Predicate<V>() {
+            public boolean apply(V q) {
+                return distance(p, q) < 2 * radius;
+            }
+        };
+    }
+
+    private static Function<Vertex, RollingCollision> vertexCollisionWith(final Vec3 rolling) {
+        return new Function<Vertex, RollingCollision>() {
+            public RollingCollision apply(Vertex vertex) {
+                return new RollingCollision(rolling, vertex);
+            }
+        };
+    }
+
+    private class Builder {
+
+        final Balls<Vertex> balls;
+        List<Triangle> triangles = newArrayList();
+        List<Vertex> vertices = newArrayList();
+        Set<OpenEdge> openEdges = newHashSet();
+
+        Builder(final Balls<Vertex> balls) {
+
+            this.balls = balls;
+
+            final Vertex a = Ordering.natural().onResultOf(new Function<Vertex, Float>() {
+                public Float apply(Vertex vertex) {
+                    return vertex.loc.z();
+                }
+            }).min(balls.balls);
+
+            vertices.add(a);
+
+            final RollingCollision collision = Approximation
+                .samplePointsAroundSphere(sphere(a, 2 * balls.radius))
+                .transformAndConcat(new Function<Vec3, Iterable<RollingCollision>>() {
+                    public Iterable<RollingCollision> apply(final Vec3 rolling) {
+                        return FluentIterable
+                            .from(balls.balls)
+                            .filter(Predicates.not(sameAs(a)))
+                            .filter(ballsAreTouching(rolling, balls.radius))
+                            .transform(vertexCollisionWith(rolling));
                     }
-                });
-                convexHull.add(new Edge(a, b));
-                a = b;
-                if (a == start) break;
+                })
+                .first()
+                .orNull();
+
+            if (collision == null) {
+                return;
+            }
+
+            final Vec3 rolling = collision.rolling;
+            final Vertex b = collision.vertex;
+
+            vertices.add(b);
+            openEdges.add(new OpenEdge(new DirectedEdge(a, b), rolling));
+            openEdges.add(new OpenEdge(new DirectedEdge(b, a), rolling));
+
+            while (openEdges.size() != 0) {
+                tryNextEdge();
             }
         }
 
         void tryNextEdge() {
-            final Edge edge;
-            Vertex previousVertex;
-            {
-                Entry<Edge, Vertex> entry = openEdges.entrySet().iterator().next();
-                edge = entry.getKey();
-                previousVertex = entry.getValue();
-                openEdges.remove(edge);
-            }
-            final Line2 line = edge.line();
+
+            final OpenEdge openEdge = openEdges.iterator().next();
+            openEdges.remove(openEdge);
+
+            final RollingCollision collision = Approximation
+                .samplePointsAroundLine(openEdge.edge.line(), openEdge.rollFrom)
+                .transformAndConcat(new Function<Vec3, Iterable<RollingCollision>>() {
+                    public Iterable<RollingCollision> apply(final Vec3 rolling) {
+                        return FluentIterable
+                            .from(balls.balls)
+                            .filter(Predicates.not(sameAs(openEdge.edge.a)))
+                            .filter(Predicates.not(sameAs(openEdge.edge.b)))
+                            .transform(vertexCollisionWith(rolling));
+                    }
+                })
+                .first()
+                .orNull();
+
+
+
             Iterable<Vertex> candidateVertices;
             if (previousVertex == null) {
                 candidateVertices = Iterables.filter(vertices, new Predicate<Vertex>() {
@@ -420,31 +536,31 @@ public final class Mesh {
                 });
             } else {
                 if (convexHull.contains(edge)) return;
-                final Side side = line.side(previousVertex.loc()).opposite();
+                final Side side = line.side(previousVertex.asVec3()).opposite();
                 candidateVertices = Iterables.filter(vertices, new Predicate<Vertex>() {
                     public boolean apply(Vertex vertex) {
-                        return !edge.vertices().contains(vertex) && line.side(vertex.loc()) == side;
+                        return !edge.vertices().contains(vertex) && line.side(vertex.asVec3()) == side;
                     }
                 });
             }
             if (!candidateVertices.iterator().hasNext()) return;
             final Vertex v = Ordering.natural().onResultOf(new Function<Vertex, Float>() {
                 public Float apply(Vertex v) {
-                    return line.bulge(v.loc());
+                    return line.bulge(v.asVec3());
                 }
             }).min(candidateVertices);
             Triangle t;
             {
                 Vertex[] tv = {edge.a(), edge.b(), v};
                 // vertices are sorted in clockwise rotation about the circumcenter
-                final Vec2 cc = circle(tv[0].loc(), tv[1].loc(), tv[2].loc()).center();
+                final Vec2 cc = circle(tv[0].asVec3(), tv[1].asVec3(), tv[2].asVec3()).center();
                 class X {
                     final float ang;
                     final Vertex v;
 
                     X(Vertex v) {
                         this.v = v;
-                        ang = v.loc().sub(cc).ang();
+                        ang = v.asVec3().sub(cc).ang();
                     }
                 }
                 X[] xs = {new X(tv[0]), new X(tv[1]), new X(tv[2])};
@@ -466,21 +582,6 @@ public final class Mesh {
             }
         }
 
-        void calculateSwing() {
-            Multimap<Vertex, Corner> v2c = ArrayListMultimap.create();
-            for (Triangle t : triangles) for (Corner c : t.corners()) v2c.put(c.vertex, c);
-            for (Collection<Corner> cs : v2c.asMap().values()) {
-                for (Corner i : cs) for (Corner j : cs) if (i.next.vertex == j.prev.vertex) setSwing(j, i);
-                Corner si = null, sj = null;
-                for (Corner i : cs) {
-                    if (i.swings.next.corner == null) si = i;
-                    if (i.swings.prev.corner == null) sj = i;
-                }
-                if (si != null) setSwing(si, sj, true);
-            }
-        }
-
     }
-*/
 
 }
