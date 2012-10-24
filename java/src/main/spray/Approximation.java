@@ -17,15 +17,14 @@ public final class Approximation {
             FluentIterable
                 .from(
                     Ranges
-                        .closedOpen(0, 360)
+                        .closedOpen(0, 90)
                         .asSet(DiscreteDomains.integers())
                 )
-                    .transform(new Function<Integer, Float>() {
-                        public Float apply(Integer i) {
-                            return (float) ((i / 360.) * 2 * Math.PI);
-                        }
+                .transform(new Function<Integer, Float>() {
+                    public Float apply(Integer i) {
+                        return (float) ((i / 90.) * 2 * Math.PI);
                     }
-                    )
+                })
                 .toImmutableList()
         );
 

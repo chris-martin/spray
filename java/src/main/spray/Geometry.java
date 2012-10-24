@@ -1287,6 +1287,11 @@ public final class Geometry {
          */
         Line3 aOrthog();
 
+        /**
+         * Move b such that the magnitude of ab is multiplied.
+         */
+        Line3 mult(float factor);
+
     }
 
     private static abstract class BaseLine3 implements Line3 {
@@ -1326,6 +1331,14 @@ public final class Geometry {
 
         public Line3 aOrthog() {
             return pointAndStep(a(), ab().orthog());
+        }
+
+        public Line3 mult(float factor) {
+            return pointAndStep(a(), ab().mult(factor));
+        }
+
+        public String toString() {
+            return String.format("%s -> %s", a(), b());
         }
     }
 

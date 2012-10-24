@@ -56,11 +56,34 @@ public class Main extends PApplet {
         view = pointAndStep(xyz(0, -300, 100), xyz(0, 300, 0));
     }
 
-    void reset() {
+    void cone() {
         resetView();
         synchronized (meshLock) {
             triangles = newArrayList();
             balls = new Balls<Vec3>();
+
+            float angle = 0;
+            float height = 0;
+            float mag = 100;
+            for (int i = 0; i < 1000; i++) {
+                height += 0.5;
+                angle += 0.5;
+                mag -= 0.1;
+                balls.balls.add(angleVec2(angle, mag).in3d().addZ(height).add(
+                    xyz(random.nextFloat(), random.nextFloat(), random.nextFloat())
+                ));
+            }
+
+            loop();
+        }
+    }
+
+    void wall() {
+        resetView();
+        synchronized (meshLock) {
+            triangles = newArrayList();
+            balls = new Balls<Vec3>();
+
             for (int y = 0; y < 2; y++) {
                 for (float x = -200; x < 200; x+= balls.radius * 2) {
                     for (float z = 0; z < 200; z+= balls.radius * 2) {
@@ -71,6 +94,7 @@ public class Main extends PApplet {
                     }
                 }
             }
+
             loop();
         }
     }
@@ -78,7 +102,7 @@ public class Main extends PApplet {
     public void setup() {
         size(900, 500, OPENGL);
         frame.setLocation(0, 0);
-        sphereDetail(7);
+        sphereDetail(1);
         rectMode(CENTER);
         glu = ((PGraphicsOpenGL) g).glu;
         PGraphicsOpenGL pgl = (PGraphicsOpenGL) g;
@@ -94,6 +118,12 @@ public class Main extends PApplet {
         } catch (AWTException e) {
             throw new RuntimeException(e);
         }
+
+        addMouseWheelListener(new java.awt.event.MouseWheelListener() {
+            public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
+                mouseWheel(evt.getWheelRotation());
+            }
+        });
 
         resetView();
         triangles = newArrayList();
@@ -160,6 +190,8 @@ public class Main extends PApplet {
         };
         t.setDaemon(true);
         t.start();
+
+        wall();
     }
 
     public void draw() {
@@ -177,9 +209,9 @@ public class Main extends PApplet {
             );
         }
 
-        // light at a fixed point in model space
         ambientLight(100, 100, 100);
         directionalLight(250, 250, 250, -20, 10, 5);
+        directionalLight(250, 250, 250, 20, -10, 5);
 
         fill(color(100, 250, 100));
         pushMatrix();
@@ -187,21 +219,23 @@ public class Main extends PApplet {
         popMatrix();
 
         fill(color(240, 240, 240));
-        strokeWeight(1);
-        stroke(0, 0, 0);
+        noStroke();
 
         synchronized (meshLock) {
 
             if (mousePressed) {
-                if (mouseButton == LEFT) {
-                    Vec3 ball = balls.rayPack(ray(0.1f));
-                    if (ball != null) {
-                        balls.balls.add(ball);
-                    }
-                } else {
-                    Vec3 ball = balls.raySearch(ray(0.07f));
-                    if (ball != null) {
-                        balls.balls.remove(ball);
+                int i = (int) Math.max(1, (spread * spread * 20));
+                while (i-- > 0) {
+                    if (mouseButton == LEFT) {
+                        Vec3 ball = balls.rayPack(ray());
+                        if (ball != null) {
+                            balls.balls.add(ball);
+                        }
+                    } else {
+                        Vec3 ball = balls.raySearch(ray());
+                        if (ball != null) {
+                            balls.balls.remove(ball);
+                        }
                     }
                 }
             }
@@ -224,6 +258,8 @@ public class Main extends PApplet {
 
             if (showBalls) {
 
+                strokeWeight(1);
+                stroke(0, 0, 0);
                 fill(color(255, 0, 0));
 
                 for (Vec3 ball : FluentIterable.from(balls.balls)) {
@@ -233,14 +269,29 @@ public class Main extends PApplet {
                     popMatrix();
                 }
             }
-/*
-            fill(color(255, 255, 255));
-            pushMatrix();
-            translate(view.b().x(), view.b().y(), view.b().z());
-            sphere(balls.radius * Mesh.rollingScale);
-            popMatrix();
-*/
 
+        }
+
+        strokeWeight(1);
+        stroke(color(255, 0, 0));
+        Line3 tiltedView = aToB(
+            view.mult(0.25f).b(),
+            rotatePointAroundLine(view.aOrthog(), view.mult(2).b(), spread)
+        ).mult(60);
+        float rotationAngle = 2 * PI / 7;
+        for (int i = 0; i < 7; i++) {
+            pushMatrix();
+            beginShape(LINE);
+            if (i != 0) {
+                tiltedView = aToB(
+                    rotatePointAroundLine(view, tiltedView.a(), rotationAngle),
+                    rotatePointAroundLine(view, tiltedView.b(), rotationAngle)
+                );
+            }
+            vertex(tiltedView.a().x(), tiltedView.a().y(), tiltedView.a().z());
+            vertex(tiltedView.b().x(), tiltedView.b().y(), tiltedView.b().z());
+            endShape();
+            popMatrix();
         }
 
         Vec2 motion = origin2();
@@ -266,8 +317,14 @@ public class Main extends PApplet {
         }
     }
 
-    Line3 ray(float spread) {
-        spread *= (float) Math.max(.5, random.nextGaussian());
+    float spread = 0.1f;
+
+    Line3 ray() {
+        float spread;
+        do {
+            spread = distance(origin2(), xy(random.nextFloat()*2-1, random.nextFloat()*2-1));
+        } while (spread > 1);
+        spread *= this.spread;
         float rotationAngle = random.nextFloat() * 2 * PI;
         return view.b(
             rotatePointAroundLine(
@@ -280,6 +337,12 @@ public class Main extends PApplet {
                 rotationAngle
             )
         );
+    }
+
+    public void mouseWheel(int delta) {
+        spread += 0.025 * delta;
+        spread = Math.max(spread, 0.025f);
+        spread = Math.min(spread, 1f);
     }
 
     public void mouseDragged(MouseEvent e) {
@@ -322,8 +385,11 @@ public class Main extends PApplet {
     public void keyPressed() {
 
         switch (key) {
-            case ' ':
-                reset();
+            case '1':
+                wall();
+                break;
+            case '2':
+                cone();
                 break;
             case 'b':
                 showBalls = !showBalls;

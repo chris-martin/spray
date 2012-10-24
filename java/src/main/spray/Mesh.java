@@ -26,7 +26,7 @@ public final class Mesh {
         return unmodifiableList(triangles);
     }
 
-    public static float rollingScale = 2.5f;
+    public static float rollingScale = 3f;
 
     public Mesh() { }
 

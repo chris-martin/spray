@@ -22,7 +22,7 @@ public class Balls<V extends IsVec3> {
 
     public final Set<V> balls = new HashSet<V>();
 
-    float radius = 5;
+    float radius = 8;
 
     public Balls() { }
 
