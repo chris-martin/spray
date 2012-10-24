@@ -25,7 +25,7 @@ public final class Mesh {
         return unmodifiableList(triangles);
     }
 
-    float rollingScale = 3f;
+    public static float rollingScale = 3.5f;
 
     public Mesh() { }
 
@@ -142,6 +142,10 @@ public final class Mesh {
             public Edge edge() {
                 return new Edge(a, b);
             }
+
+            public String toString() {
+                return String.format("%d %s to %d %s rolling from %s", a.id, a.loc, b.id, b.loc, rollFrom);
+            }
         }
 
         private class RollingCollision {
@@ -180,7 +184,7 @@ public final class Mesh {
                 public Float apply(Vertex vertex) {
                     return vertex.loc.z();
                 }
-            }).min(balls.balls);
+            }).max(balls.balls);
 
             vertices.add(a);
 
@@ -230,8 +234,14 @@ public final class Mesh {
 
             final RollingCollision collision = Approximation
                 .samplePointsAroundLine(openEdge.line(), openEdge.rollFrom)
+                .skip(3)
                 .transformAndConcat(new Function<Vec3, Iterable<RollingCollision>>() {
                     public Iterable<RollingCollision> apply(final Vec3 rolling) {
+                        /*triangles.add(new Triangle(
+                            new Vertex(rolling),
+                            new Vertex(rolling.addX(5)),
+                            new Vertex(rolling.addY(5))
+                        ));*/
                         return FluentIterable
                             .from(balls.balls)
                             .filter(new Predicate<Vertex>() {

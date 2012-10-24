@@ -70,6 +70,7 @@ public class Main extends PApplet {
                     }
                 }
             }
+            loop();
         }
     }
 
@@ -88,7 +89,7 @@ public class Main extends PApplet {
 
         noCursor();
         try {
-            robot = new Robot(java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[0]);
+            robot = new Robot(java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[1]);
         } catch (AWTException e) {
             throw new RuntimeException(e);
         }
@@ -135,6 +136,7 @@ public class Main extends PApplet {
                         if (mesh != null) {
                             synchronized (meshLock) {
                                 triangles = mesh.triangles();
+                                loop();
                             }
                         }
                         Thread.sleep(500);
@@ -215,10 +217,17 @@ public class Main extends PApplet {
                 for (Vec3 ball : FluentIterable.from(balls.balls)) {
                     pushMatrix();
                     translate(ball.x(), ball.y(), ball.z());
-                    sphere(balls.radius);
+                    sphere(2);
                     popMatrix();
                 }
             }
+/*
+            fill(color(255, 255, 255));
+            pushMatrix();
+            translate(view.b().x(), view.b().y(), view.b().z());
+            sphere(balls.radius * Mesh.rollingScale);
+            popMatrix();
+*/
 
         }
 
