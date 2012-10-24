@@ -114,7 +114,7 @@ public class Main extends PApplet {
 
         noCursor();
         try {
-            robot = new Robot(java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[1]);
+            robot = new Robot(java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[0]);
         } catch (AWTException e) {
             throw new RuntimeException(e);
         }
