@@ -8,7 +8,10 @@ import java.awt.event.MouseEvent;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.*;
 
 import javax.media.opengl.GL;
 import javax.media.opengl.glu.GLU;
@@ -17,8 +20,11 @@ import javax.swing.Timer;
 import com.google.common.collect.FluentIterable;
 import processing.core.PApplet;
 import processing.opengl.PGraphicsOpenGL;
+import spray.Mesh.Triangle;
+import spray.Mesh.Vertex;
 import thirdparty.RepeatingReleasedEventsFixer;
 
+import static com.google.common.collect.Lists.newArrayList;
 import static spray.Geometry.*;
 import static tube.Color.black;
 import static tube.Color.white;
@@ -29,6 +35,8 @@ public class Main extends PApplet {
         PApplet.main(new String[]{"spray.Main"});
     }
 
+    final Object meshLock = new Object();
+
     GL gl;
     GLU glu;
     PGraphicsOpenGL pgogl;
@@ -38,18 +46,36 @@ public class Main extends PApplet {
     Vec2 pmouse;
     boolean robotMouseEvent;
     final Random random = new Random();
+    List<Triangle> triangles;
+    boolean showBalls;
 
     boolean[] keys = new boolean[128];
 
-    void reset() {
+    void resetView() {
         view = pointAndStep(xyz(0, -300, 100), xyz(0, 300, 0));
-        balls = new Balls<Vec3>();
-        for (float x = -300; x < 300; x+= balls.radius * 2 + 1) {
-            for (float z = 0; z < 200; z+= balls.radius * 2 + 1) {
-                balls.balls.add(xyz(
-                    x + random.nextFloat(),
-                    0 + random.nextFloat(),
-                    z + random.nextFloat()));
+    }
+
+    void clear() {
+        synchronized (meshLock) {
+            triangles = newArrayList();
+            balls = new Balls<Vec3>();
+        }
+    }
+
+    void reset() {
+        resetView();
+        synchronized (meshLock) {
+            triangles = newArrayList();
+            balls = new Balls<Vec3>();
+            boolean b = false;
+            for (float x = -30; x < 30; x+= balls.radius * 2 + 1) {
+                for (float z = 0; z < 60; z+= balls.radius * 2 + 1) {
+                    balls.balls.add(xyz(
+                        x + random.nextFloat(),
+                        0 + random.nextFloat(),
+                        z + random.nextFloat() + (b ? 0 : balls.radius)));
+                }
+                b = !b;
             }
         }
     }
@@ -69,12 +95,13 @@ public class Main extends PApplet {
 
         noCursor();
         try {
-            robot = new Robot(java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[1]);
+            robot = new Robot(java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[0]);
         } catch (AWTException e) {
             throw new RuntimeException(e);
         }
 
-        reset();
+        resetView();
+        clear();
 
         loop();
 
@@ -86,6 +113,43 @@ public class Main extends PApplet {
         });
         timer.setRepeats(false);
         timer.start();
+
+        Thread t = new Thread() {
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            public void run() {
+                while (true) {
+                    try {
+                        final Balls balls;
+                        synchronized (meshLock) {
+                            balls = new Balls<Vec3>(Main.this.balls.balls);
+                        }
+                        Future<Mesh> meshFuture = executor.submit(new Callable<Mesh>() {
+                            public Mesh call() throws Exception {
+                                return new Mesh(balls);
+                            }
+                        });
+                        Mesh mesh = null;
+                        try {
+                            mesh = meshFuture.get(3, TimeUnit.SECONDS);
+                        } catch (ExecutionException e) {
+                            e.printStackTrace();
+                        } catch (TimeoutException e) {
+                            System.err.println("Mesh calculation timed out");
+                        }
+                        if (mesh != null) {
+                            synchronized (meshLock) {
+                                triangles = mesh.triangles();
+                            }
+                        }
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        return;
+                    }
+                }
+            }
+        };
+        t.setDaemon(true);
+        t.start();
     }
 
     public void draw() {
@@ -112,31 +176,56 @@ public class Main extends PApplet {
         rect(0, 0, 5000, 5000);
         popMatrix();
 
-        noStroke();
         fill(color(240, 240, 240));
+        strokeWeight(1);
+        stroke(0, 0, 0);
 
-        // render sphere of radius r and center P
-        for (Vec3 ball : FluentIterable.from(balls.balls)) {
-            pushMatrix();
-            translate(ball.x(), ball.y(), ball.z());
-            sphere(balls.radius);
-            popMatrix();
-        }
+        synchronized (meshLock) {
 
-        if (mousePressed) {
-            for (int i = 0; i < 5; i++) {
-                if (mouseButton == LEFT) {
-                    Vec3 ball = balls.rayPack(ray(0.1f));
-                    if (ball != null) {
-                        balls.balls.add(ball);
-                    }
-                } else {
-                    Vec3 ball = balls.raySearch(ray(0.07f));
-                    if (ball != null) {
-                        balls.balls.remove(ball);
+            if (mousePressed) {
+                for (int i = 0; i < 5; i++) {
+                    if (mouseButton == LEFT) {
+                        Vec3 ball = balls.rayPack(ray(0.1f));
+                        if (ball != null) {
+                            balls.balls.add(ball);
+                        }
+                    } else {
+                        Vec3 ball = balls.raySearch(ray(0.07f));
+                        if (ball != null) {
+                            balls.balls.remove(ball);
+                        }
                     }
                 }
             }
+
+            for (Triangle t : triangles) {
+
+                Iterator<Vertex> vertices = t.vertices().iterator();
+                Vec3 a = vertices.next().asVec3();
+                Vec3 b = vertices.next().asVec3();
+                Vec3 c = vertices.next().asVec3();
+
+                pushMatrix();
+                beginShape(TRIANGLES);
+                vertex(a.x(), a.y(), a.z());
+                vertex(b.x(), b.y(), b.z());
+                vertex(c.x(), c.y(), c.z());
+                endShape();
+                popMatrix();
+            }
+
+            if (showBalls) {
+
+                fill(color(255, 0, 0));
+
+                for (Vec3 ball : FluentIterable.from(balls.balls)) {
+                    pushMatrix();
+                    translate(ball.x(), ball.y(), ball.z());
+                    sphere(balls.radius);
+                    popMatrix();
+                }
+            }
+
         }
 
         Vec2 motion = origin2();
@@ -197,8 +286,8 @@ public class Main extends PApplet {
 
             float elevation = view.ab().elevation();
             elevation -= PI * (diff.y()) / height;
-            elevation = max(-PI / 2 + 0.1f, elevation);
-            elevation = min(PI / 2 - 0.1f, elevation);
+            elevation = max(PI / -2 + 0.5f, elevation);
+            elevation = min(PI / 2 - 0.5f, elevation);
 
             view = view.ab(view.ab().azimuth(azimuth).elevation(elevation));
             loop();
@@ -217,9 +306,13 @@ public class Main extends PApplet {
 
     public void keyPressed() {
 
-        // reset the view
-        if (key == ' ') {
-            reset();
+        switch (key) {
+            case ' ':
+                reset();
+                break;
+            case 'b':
+                showBalls = !showBalls;
+                break;
         }
 
         int i = (int) key;

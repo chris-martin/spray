@@ -16,9 +16,8 @@ public final class Geometry {
     private static final float PI = (float) Math.PI;
     private static final float PI2 = PI * 2;
     private static final float HALFPI = PI / 2;
-    private static final float QUARTERPI = PI / 4;
-    private static final float NEG_QUARTERPI = PI / -4;
-    private static final float THREE_HALVES_PI = (float) (1.5) * PI;
+    private static final float NEG_HALFPI = PI / -2;
+    private static final float THREE_HALVES_PI = 1.5f * PI;
 
     private static float mod2pi(float a) {
         return a < 0 ? ((a % PI2) + PI2) : (a % PI2);
@@ -29,11 +28,24 @@ public final class Geometry {
     }
 
     private static float elevation(float a) {
-        if (a >= NEG_QUARTERPI && a <= QUARTERPI) return a;
-        a = mod2pi(a);
-        if (a <= QUARTERPI) return a;
-        if (a >= THREE_HALVES_PI) return a - PI2;
-        return PI - a;
+        float retval;
+        if (a >= NEG_HALFPI && a <= HALFPI) {
+            retval = a;
+        } else {
+            a = mod2pi(a);
+            if (a <= HALFPI) {
+                retval = a;
+            } else if (a >= THREE_HALVES_PI) {
+                retval = a - PI2;
+            } else {
+                retval = PI - a;
+            }
+        }
+        if (retval >= NEG_HALFPI && retval <= HALFPI) {
+            return retval;
+        } else {
+            throw new AssertionError(retval);
+        }
     }
 
     private static int sign(float x) {
@@ -1019,7 +1031,7 @@ public final class Geometry {
 
         public float elevation() {
             if (!hasElevation) {
-                elevation = (float) asin(z / mag());
+                elevation = Geometry.elevation((float) asin(z / mag()));
                 hasElevation = true;
             }
             return elevation;
@@ -1027,7 +1039,7 @@ public final class Geometry {
 
         public float azimuth() {
             if (!hasAzimuth) {
-                azimuth = (float) atan2(y, x);
+                azimuth = Geometry.mod2pi((float) atan2(y, x));
                 hasAzimuth = true;
             }
             return azimuth;

@@ -48,7 +48,7 @@ public final class Approximation {
                 )
                 .transform(new Function<Integer, Vec3>() {
                     public Vec3 apply(Integer i) {
-                        float elevation = -1 * (float) ((i / 1000) * Math.PI - (Math.PI / 2));
+                        float elevation = -1 * (float) ((i / 1000.) * Math.PI - (Math.PI / 2));
                         float azimuth = (float) (2 * Math.PI * (i % 60) / 60.);
                         return Geometry.azimuthAndElevation(azimuth, elevation, 1);
                     }
