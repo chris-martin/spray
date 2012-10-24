@@ -17,6 +17,7 @@ import javax.media.opengl.GL;
 import javax.media.opengl.glu.GLU;
 import javax.swing.Timer;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.FluentIterable;
 import processing.core.PApplet;
 import processing.opengl.PGraphicsOpenGL;
@@ -47,7 +48,7 @@ public class Main extends PApplet {
     boolean robotMouseEvent;
     final Random random = new Random();
     List<Triangle> triangles;
-    boolean showBalls = true;
+    boolean showBalls;
 
     boolean[] keys = new boolean[128];
 
@@ -109,15 +110,25 @@ public class Main extends PApplet {
         timer.setRepeats(false);
         timer.start();
 
-        Thread t = new Thread() {
+        Thread t = new Thread("mesh") {
             public void run() {
+
+                ExecutorService executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+                    public Thread newThread(Runnable r) {
+                        return new Thread(r, "mesh-executor");
+                    }
+                });
+
+                Stopwatch stopwatch = new Stopwatch();
+
                 while (true) {
                     try {
+                        stopwatch.reset();
+                        stopwatch.start();
                         final Balls balls;
                         synchronized (meshLock) {
                             balls = new Balls<Vec3>(Main.this.balls.balls);
                         }
-                        ExecutorService executor = Executors.newSingleThreadExecutor();
                         Future<Mesh> meshFuture = executor.submit(new Callable<Mesh>() {
                             public Mesh call() throws Exception {
                                 return new Mesh(balls);
@@ -126,20 +137,21 @@ public class Main extends PApplet {
                         Mesh mesh = null;
                         try {
                             mesh = meshFuture.get(3, TimeUnit.SECONDS);
-                            System.err.println("Mesh calculation completed");
                         } catch (ExecutionException e) {
                             e.printStackTrace();
                         } catch (TimeoutException e) {
                             System.err.println("Mesh calculation timed out");
                         }
-                        executor.shutdownNow();
+                        meshFuture.cancel(true);
                         if (mesh != null) {
                             synchronized (meshLock) {
                                 triangles = mesh.triangles();
                                 loop();
                             }
                         }
-                        Thread.sleep(500);
+                        stopwatch.stop();
+                        System.out.println(stopwatch.toString());
+                        Thread.yield();
                     } catch (InterruptedException e) {
                         return;
                     }

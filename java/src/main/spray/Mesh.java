@@ -3,6 +3,7 @@ package spray;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 
 import java.util.*;
@@ -25,7 +26,7 @@ public final class Mesh {
         return unmodifiableList(triangles);
     }
 
-    public static float rollingScale = 3.5f;
+    public static float rollingScale = 2.5f;
 
     public Mesh() { }
 
@@ -232,18 +233,23 @@ public final class Mesh {
 
         void tryEdge(final OpenEdge openEdge) {
 
+            final List<Vertex> nearbyVertices = ImmutableList.copyOf(
+                FluentIterable.from(balls.balls)
+                    .filter(new Predicate<Vertex>() {
+                        public boolean apply(Vertex v) {
+                            return distance(openEdge.a, v) < 2 * rollingRadius
+                                || distance(openEdge.b, v) < 2 * rollingRadius;
+                        }
+                    })
+            );
+
             final RollingCollision collision = Approximation
                 .samplePointsAroundLine(openEdge.line(), openEdge.rollFrom)
                 .skip(3)
                 .transformAndConcat(new Function<Vec3, Iterable<RollingCollision>>() {
                     public Iterable<RollingCollision> apply(final Vec3 rolling) {
-                        /*triangles.add(new Triangle(
-                            new Vertex(rolling),
-                            new Vertex(rolling.addX(5)),
-                            new Vertex(rolling.addY(5))
-                        ));*/
                         return FluentIterable
-                            .from(balls.balls)
+                            .from(nearbyVertices)
                             .filter(new Predicate<Vertex>() {
                                 public boolean apply(Vertex v) {
                                     return v != openEdge.a && v != openEdge.b
