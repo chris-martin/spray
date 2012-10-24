@@ -1,5 +1,7 @@
 package spray;
 
+import com.google.common.base.Joiner;
+
 import java.util.List;
 
 import static java.lang.Math.*;
@@ -1684,6 +1686,19 @@ public final class Geometry {
 
         Vec3 asVec3();
 
+    }
+
+    public static Vec3 parseXYZ(String s) {
+        String[] ss = s.split(",");
+        return xyz(
+            Float.parseFloat(ss[0]),
+            Float.parseFloat(ss[1]),
+            Float.parseFloat(ss[2])
+        );
+    }
+
+    public static String formatXYZ(Vec3 v) {
+        return Joiner.on(",").join(v.x(), v.y(), v.z());
     }
 
 }

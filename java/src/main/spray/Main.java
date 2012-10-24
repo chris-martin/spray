@@ -5,12 +5,14 @@ import java.awt.Robot;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.*;
 
 import javax.media.opengl.GL;
@@ -19,6 +21,7 @@ import javax.swing.Timer;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.FluentIterable;
+import com.google.common.io.Files;
 import processing.core.PApplet;
 import processing.opengl.PGraphicsOpenGL;
 import spray.Mesh.Triangle;
@@ -26,6 +29,8 @@ import spray.Mesh.Vertex;
 import thirdparty.RepeatingReleasedEventsFixer;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.collect.Maps.newHashMap;
+import static com.google.common.collect.Sets.newHashSet;
 import static spray.Geometry.*;
 import static tube.Color.black;
 import static tube.Color.white;
@@ -396,6 +401,15 @@ public class Main extends PApplet {
             case 'b':
                 showBalls = !showBalls;
                 break;
+            case 'i':
+                inputBalls();
+                break;
+            case 'o':
+                outputBalls();
+                break;
+            case 'p':
+                outputTriangles();
+                break;
         }
 
         int i = (int) key;
@@ -405,6 +419,96 @@ public class Main extends PApplet {
 
         loop();
 
+    }
+
+    static final File ballFile = new File("balls.txt");
+    static final File meshFile = new File("mesh.vts");
+
+    void inputBalls() {
+        synchronized (meshLock) {
+            try {
+                balls.balls.clear();
+                if (ballFile.exists() && ballFile.isFile()) {
+                    List<String> lines = Files.readLines(ballFile, java.nio.charset.Charset.defaultCharset());
+                    for (String line : lines) {
+                        line = line.trim();
+                        if (line.length() != 0) {
+                            balls.balls.add(parseXYZ(line));
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    void outputBalls() {
+        synchronized (meshLock) {
+            try {
+                Writer w = new FileWriter(ballFile);
+                for (Vec3 ball : balls.balls) {
+                    w.write(formatXYZ(ball));
+                    w.write(System.lineSeparator());
+                }
+                w.flush();
+                w.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    void outputTriangles() {
+        synchronized (meshLock) {
+            try {
+                Set<Vertex> vertexSet = newHashSet();
+                for (Triangle t : triangles) {
+                    for (Vertex v : t.vertices()) {
+                        vertexSet.add(v);
+                    }
+                }
+                List<Vertex> vertexList = newArrayList(vertexSet);
+                Map<Vertex, Integer> vertexMap = newHashMap();
+                for (int i = 0; i < vertexList.size(); i++) {
+                    vertexMap.put(vertexList.get(i), i);
+                }
+
+                Writer w = new FileWriter(meshFile);
+
+                // number of vertices
+                w.write(Integer.toString(vertexList.size()));
+                w.write(System.lineSeparator());
+
+                // list of vertices
+                for (Vertex v : vertexList) {
+                    w.write(formatXYZ(v.asVec3()));
+                    w.write(System.lineSeparator());
+                }
+
+                // number of triangles
+                w.write(Integer.toString(triangles.size()));
+                w.write(System.lineSeparator());
+
+                // list of triangles
+                for (Triangle t : triangles) {
+                    Iterator<Vertex> vs = t.vertices().iterator();
+                    w.write(String.format(
+                        "%d,%d,%d",
+                        vertexMap.get(vs.next()),
+                        vertexMap.get(vs.next()),
+                        vertexMap.get(vs.next())
+                    ));
+                    w.write(System.lineSeparator());
+                }
+
+                w.flush();
+                w.close();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void keyReleased() {
