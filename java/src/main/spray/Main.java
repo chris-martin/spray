@@ -240,20 +240,22 @@ public class Main extends PApplet {
                 }
             }
 
-            for (Triangle t : triangles) {
+            if (!showBalls) {
+                for (Triangle t : triangles) {
 
-                Iterator<Vertex> vertices = t.vertices().iterator();
-                Vec3 a = vertices.next().asVec3();
-                Vec3 b = vertices.next().asVec3();
-                Vec3 c = vertices.next().asVec3();
+                    Iterator<Vertex> vertices = t.vertices().iterator();
+                    Vec3 a = vertices.next().asVec3();
+                    Vec3 b = vertices.next().asVec3();
+                    Vec3 c = vertices.next().asVec3();
 
-                pushMatrix();
-                beginShape(TRIANGLES);
-                vertex(a.x(), a.y(), a.z());
-                vertex(b.x(), b.y(), b.z());
-                vertex(c.x(), c.y(), c.z());
-                endShape();
-                popMatrix();
+                    pushMatrix();
+                    beginShape(TRIANGLES);
+                    vertex(a.x(), a.y(), a.z());
+                    vertex(b.x(), b.y(), b.z());
+                    vertex(c.x(), c.y(), c.z());
+                    endShape();
+                    popMatrix();
+                }
             }
 
             if (showBalls) {
@@ -265,7 +267,7 @@ public class Main extends PApplet {
                 for (Vec3 ball : FluentIterable.from(balls.balls)) {
                     pushMatrix();
                     translate(ball.x(), ball.y(), ball.z());
-                    sphere(2);
+                    sphere(balls.radius);
                     popMatrix();
                 }
             }
