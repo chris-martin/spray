@@ -2,7 +2,6 @@ package spray;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Ordering;
 
@@ -15,7 +14,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 import static org.testng.collections.Lists.newArrayList;
 import static spray.Geometry.*;
-import static spray.Geometry.distance;
 
 public final class Mesh {
 
@@ -27,7 +25,7 @@ public final class Mesh {
         return unmodifiableList(triangles);
     }
 
-    float rollingScale = 4;
+    float rollingScale = 3f;
 
     public Mesh() { }
 
@@ -45,32 +43,19 @@ public final class Mesh {
             })
         );
 
-        int i = 0;
         while (vBalls.balls.size() != 0) {
-            i++;
             Builder builder = new Builder(vBalls);
             triangles.addAll(builder.triangles);
             for (Vertex v : builder.vertices) {
                 vBalls.balls.remove(v);
             }
         }
-        //System.out.println(i + " components");
 
-    }
-
-    public Collection<Edge> edges() {
-        Set<Edge> edges = newHashSet();
-        for (Triangle t : triangles) edges.addAll(t.edges());
-        return edges;
     }
 
     public class Vertex implements IsVec3 {
 
         private final int id = ++previousVertexId;
-
-        public int id() {
-            return id;
-        }
 
         public int hashCode() {
             return id;
@@ -86,135 +71,6 @@ public final class Mesh {
             this.loc = loc;
         }
 
-        private Corner corner;
-
-        public Corner corner() {
-            return corner;
-        }
-
-        public Iterable<Corner> corners() {
-            return new Iterable<Corner>() {
-                public Iterator<Corner> iterator() {
-                    return cornersIter();
-                }
-            };
-        }
-
-        public Iterator<Corner> cornersIter() {
-            return new Iterator<Corner>() {
-                Corner c = Vertex.this.corner;
-                Set<Corner> visited; {
-                    assert (visited = newHashSet()) != null;
-                }
-
-                public boolean hasNext() {
-                    return c != null;
-                }
-
-                public Corner next() {
-                    if (c == null) throw new NoSuchElementException();
-                    Corner retval = c;
-                    c = c.swings.next.corner;
-                    if (c == Vertex.this.corner) c = null;
-                    assert visited.add(retval);
-                    assert triangles.contains(retval.triangle);
-                    return retval;
-                }
-
-                public void remove() {
-                    throw new UnsupportedOperationException();
-                }
-            };
-        }
-    }
-
-    public class Corner {
-        private Triangle triangle;
-        private Corner next, prev;
-        private Vertex vertex;
-        private Swings swings = new Swings();
-
-        private Corner(Vertex vertex, Triangle triangle) {
-            this.vertex = vertex;
-            this.triangle = triangle;
-            if (vertex.corner == null) vertex.corner = this;
-        }
-
-        public Triangle triangle() {
-            return triangle;
-        }
-
-        public Vertex vertex() {
-            return vertex;
-        }
-
-        public Corner next() {
-            return next;
-        }
-
-        public Corner prev() {
-            return prev;
-        }
-
-        public Swings swing() {
-            return swings;
-        }
-    }
-
-    public static class Swings {
-        private Swing prev = new Swing(), next = new Swing();
-
-        public Swing prev() {
-            return prev;
-        }
-
-        public Swing next() {
-            return next;
-        }
-    }
-
-    public static class Swing {
-        private Corner corner;
-
-        public Corner corner() {
-            return corner;
-        }
-
-        private boolean isSuper;
-
-        public boolean isSuper() {
-            return isSuper;
-        }
-
-        public Swing() {
-        }
-
-        public Swing(Corner corner, boolean isSuper) {
-            this.corner = corner;
-            this.isSuper = isSuper;
-        }
-
-        public Swing copy() {
-            Swing x = new Swing();
-            x.corner = corner;
-            x.isSuper = isSuper;
-            return x;
-        }
-    }
-
-    private static void setSwing(Corner prev, Corner next) {
-        prev.swings.next.corner = next;
-        next.swings.prev.corner = prev;
-    }
-
-    private static void setSwing(Corner prev, Corner next, boolean isSuper) {
-        setSwing(prev, next);
-        prev.swings.next.isSuper = isSuper;
-        next.swings.prev.isSuper = isSuper;
-    }
-
-    private static void setSwing(Corner prev, boolean isSuper) {
-        setSwing(prev, prev.swings.next.corner, isSuper);
     }
 
     /**
@@ -230,22 +86,6 @@ public final class Mesh {
             this.b = flip ? a : b;
         }
 
-        public Vertex a() {
-            return a;
-        }
-
-        public Vertex b() {
-            return b;
-        }
-
-        public List<Vertex> vertices() {
-            return asList(a(), b());
-        }
-
-        public Line3 line() {
-            return aToB(a.loc, b.loc);
-        }
-
         public boolean equals(Object o) {
             return this == o || (o instanceof Edge && a == ((Edge) o).a && b == ((Edge) o).b);
         }
@@ -254,16 +94,6 @@ public final class Mesh {
             return 31 * a.hashCode() + b.hashCode();
         }
 
-        public List<Triangle> triangles() {
-            List<Triangle> ts = newArrayList(2);
-            Corner c1 = null;
-            for (Corner c : a.corners()) if (c.next.vertex == b) c1 = c;
-            if (c1 != null) ts.add(c1.triangle);
-            Corner c2 = null;
-            for (Corner c : b.corners()) if (c.next.vertex == a) c2 = c;
-            if (c2 != null) ts.add(c2.triangle);
-            return ts;
-        }
     }
 
     public class Triangle {
@@ -273,29 +103,20 @@ public final class Mesh {
             return id;
         }
 
-        private final Corner a, b, c;
+        private final Vertex a, b, c;
 
         public Triangle(Vertex a, Vertex b, Vertex c) {
-            this.a = new Corner(a, this);
-            this.b = new Corner(b, this);
-            this.c = new Corner(c, this);
-        }
-
-        public List<Corner> corners() {
-            return asList(a, b, c);
+            this.a = a;
+            this.b = b;
+            this.c = c;
         }
 
         public FluentIterable<Vertex> vertices() {
-            return FluentIterable.from(corners())
-                .transform(new Function<Corner, Vertex>() {
-                    public Vertex apply(Corner corner) {
-                        return corner.vertex;
-                    }
-                });
+            return FluentIterable.from(asList(a, b, c));
         }
 
         public List<Edge> edges() {
-            Vertex a = this.a.vertex, b = this.b.vertex, c = this.c.vertex;
+            Vertex a = this.a, b = this.b, c = this.c;
             return asList(new Edge(a, b), new Edge(b, c), new Edge(c, a));
         }
 
@@ -359,7 +180,7 @@ public final class Mesh {
                 public Float apply(Vertex vertex) {
                     return vertex.loc.z();
                 }
-            }).max(balls.balls);
+            }).min(balls.balls);
 
             vertices.add(a);
 
@@ -403,7 +224,6 @@ public final class Mesh {
                     return;
                 }
             }
-            //System.out.println(triangles.size());
         }
 
         void tryEdge(final OpenEdge openEdge) {
@@ -417,8 +237,6 @@ public final class Mesh {
                             .filter(new Predicate<Vertex>() {
                                 public boolean apply(Vertex v) {
                                     return v != openEdge.a && v != openEdge.b
-                                        && !closedEdges.contains(new Edge(openEdge.a, v))
-                                        && !closedEdges.contains(new Edge(openEdge.b, v))
                                         && distance(v, rolling) < rollingRadius;
                                 }
                             })
@@ -438,10 +256,12 @@ public final class Mesh {
                 new OpenEdge(openEdge.a, collision.vertex, collision.rolling),
                 new OpenEdge(collision.vertex, openEdge.b, collision.rolling)
             )) {
-                if (openEdges.remove(nextEdge.edge()) != null) {
-                    closedEdges.add(nextEdge.edge());
-                } else {
-                    openEdges.put(nextEdge.edge(), nextEdge);
+                if (!closedEdges.contains(nextEdge.edge())) {
+                    if (openEdges.remove(nextEdge.edge()) != null) {
+                        closedEdges.add(nextEdge.edge());
+                    } else {
+                        openEdges.put(nextEdge.edge(), nextEdge);
+                    }
                 }
             }
 

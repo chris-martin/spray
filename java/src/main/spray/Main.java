@@ -47,7 +47,7 @@ public class Main extends PApplet {
     boolean robotMouseEvent;
     final Random random = new Random();
     List<Triangle> triangles;
-    boolean showBalls;
+    boolean showBalls = true;
 
     boolean[] keys = new boolean[128];
 
@@ -55,27 +55,20 @@ public class Main extends PApplet {
         view = pointAndStep(xyz(0, -300, 100), xyz(0, 300, 0));
     }
 
-    void clear() {
-        synchronized (meshLock) {
-            triangles = newArrayList();
-            balls = new Balls<Vec3>();
-        }
-    }
-
     void reset() {
         resetView();
         synchronized (meshLock) {
             triangles = newArrayList();
             balls = new Balls<Vec3>();
-            boolean b = false;
-            for (float x = -30; x < 30; x+= balls.radius * 2 + 1) {
-                for (float z = 0; z < 60; z+= balls.radius * 2 + 1) {
-                    balls.balls.add(xyz(
-                        x + random.nextFloat(),
-                        0 + random.nextFloat(),
-                        z + random.nextFloat() + (b ? 0 : balls.radius)));
+            for (int y = 0; y < 2; y++) {
+                for (float x = -200; x < 200; x+= balls.radius * 2) {
+                    for (float z = 0; z < 200; z+= balls.radius * 2) {
+                        balls.balls.add(xyz(
+                            x + random.nextFloat(),
+                            y * balls.radius * 2 + random.nextFloat() * 4,
+                            z + random.nextFloat()));
+                    }
                 }
-                b = !b;
             }
         }
     }
@@ -83,7 +76,7 @@ public class Main extends PApplet {
     public void setup() {
         size(900, 500, OPENGL);
         frame.setLocation(0, 0);
-        sphereDetail(1);
+        sphereDetail(7);
         rectMode(CENTER);
         glu = ((PGraphicsOpenGL) g).glu;
         PGraphicsOpenGL pgl = (PGraphicsOpenGL) g;
@@ -101,7 +94,8 @@ public class Main extends PApplet {
         }
 
         resetView();
-        clear();
+        triangles = newArrayList();
+        balls = new Balls<Vec3>();
 
         loop();
 
@@ -115,7 +109,6 @@ public class Main extends PApplet {
         timer.start();
 
         Thread t = new Thread() {
-            ExecutorService executor = Executors.newSingleThreadExecutor();
             public void run() {
                 while (true) {
                     try {
@@ -123,6 +116,7 @@ public class Main extends PApplet {
                         synchronized (meshLock) {
                             balls = new Balls<Vec3>(Main.this.balls.balls);
                         }
+                        ExecutorService executor = Executors.newSingleThreadExecutor();
                         Future<Mesh> meshFuture = executor.submit(new Callable<Mesh>() {
                             public Mesh call() throws Exception {
                                 return new Mesh(balls);
@@ -131,11 +125,13 @@ public class Main extends PApplet {
                         Mesh mesh = null;
                         try {
                             mesh = meshFuture.get(3, TimeUnit.SECONDS);
+                            System.err.println("Mesh calculation completed");
                         } catch (ExecutionException e) {
                             e.printStackTrace();
                         } catch (TimeoutException e) {
                             System.err.println("Mesh calculation timed out");
                         }
+                        executor.shutdownNow();
                         if (mesh != null) {
                             synchronized (meshLock) {
                                 triangles = mesh.triangles();
@@ -183,17 +179,15 @@ public class Main extends PApplet {
         synchronized (meshLock) {
 
             if (mousePressed) {
-                for (int i = 0; i < 5; i++) {
-                    if (mouseButton == LEFT) {
-                        Vec3 ball = balls.rayPack(ray(0.1f));
-                        if (ball != null) {
-                            balls.balls.add(ball);
-                        }
-                    } else {
-                        Vec3 ball = balls.raySearch(ray(0.07f));
-                        if (ball != null) {
-                            balls.balls.remove(ball);
-                        }
+                if (mouseButton == LEFT) {
+                    Vec3 ball = balls.rayPack(ray(0.1f));
+                    if (ball != null) {
+                        balls.balls.add(ball);
+                    }
+                } else {
+                    Vec3 ball = balls.raySearch(ray(0.07f));
+                    if (ball != null) {
+                        balls.balls.remove(ball);
                     }
                 }
             }

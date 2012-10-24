@@ -44,7 +44,7 @@ public class MeshTest {
             xyz(1, 0, 0),
             xyz(0, 1, 0),
             xyz(0, 0, 1),
-            xyz(.2, .2, .2),
+            xyz(.1, .1, .1),
             origin3()
         )));
         assertEquals(mesh.triangles.size(), 4);

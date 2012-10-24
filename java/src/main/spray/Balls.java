@@ -22,7 +22,7 @@ public class Balls<V extends IsVec3> {
 
     public final Set<V> balls = new HashSet<V>();
 
-    float radius = 8;
+    float radius = 20;
 
     public Balls() { }
 
@@ -64,7 +64,7 @@ public class Balls<V extends IsVec3> {
     Vec3 rayPack(final Line3 ray) {
 
         final V c1 = raySearch(ray);
-        if (c1 == null) {
+        if (c1 == null || distance(c1, ray.a()) < 4 * radius) {
             return null;
         }
 
@@ -73,12 +73,12 @@ public class Balls<V extends IsVec3> {
                 .filter(new Predicate<V>() {
                     public boolean apply(V ball) {
                         float d = distance(c1, ball);
-                        return d > 0.1 && d < radius * 4;
+                        return d > 0.1 && d < radius * 8;
                     }
                 })
         );
 
-        final Vec3 ball1 = c1.asVec3().add(ray.ab().mag(-1 * radius));
+        final Vec3 ball1 = c1.asVec3().add(ray.ab().mag(-2 * radius));
 
         final Line3 axis1 = pointAndStep(c1, ray.ab().orthog());
 
@@ -89,7 +89,7 @@ public class Balls<V extends IsVec3> {
                         .from(closeBalls)
                         .filter(new Predicate<V>() {
                             public boolean apply(V closeBall) {
-                                return distance(ball2, closeBall) < radius + 1;
+                                return distance(ball2, closeBall) < 2 * radius + 1;
                             }
                         })
                         .transform(new Function<V, Object[]>() {
@@ -125,7 +125,7 @@ public class Balls<V extends IsVec3> {
                             .from(closeBalls)
                             .anyMatch(new Predicate<V>() {
                                 public boolean apply(V closeBall) {
-                                    return distance(ball3, closeBall) < radius + 2;
+                                    return distance(ball3, closeBall) < 2 * radius + 1;
                                 }
                             });
                     }

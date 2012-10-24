@@ -17,12 +17,12 @@ public final class Approximation {
             FluentIterable
                 .from(
                     Ranges
-                        .closedOpen(0, 1000)
+                        .closedOpen(0, 360)
                         .asSet(DiscreteDomains.integers())
                 )
                     .transform(new Function<Integer, Float>() {
                         public Float apply(Integer i) {
-                            return (float) ((i / 1000.) * 2 * Math.PI);
+                            return (float) ((i / 360.) * 2 * Math.PI);
                         }
                     }
                     )
@@ -38,23 +38,25 @@ public final class Approximation {
             });
     }
 
+    public static FluentIterable<Vec3> spiral(final int points, final float loops) {
+        final float pointsPerLoop = points / loops;
+        return FluentIterable
+            .from(
+                Ranges
+                    .closedOpen(0, points)
+                    .asSet(DiscreteDomains.integers())
+            )
+            .transform(new Function<Integer, Vec3>() {
+                public Vec3 apply(Integer i) {
+                    float elevation = -1 * (float) ((i / (float) points) * Math.PI - (Math.PI / 2));
+                    float azimuth = (float) (2 * Math.PI * (i % pointsPerLoop) / pointsPerLoop);
+                    return Geometry.azimuthAndElevation(azimuth, elevation, 1);
+                }
+            });
+    }
+
     public static final FluentIterable<Vec3> SPIRAL =
-        FluentIterable.from(
-            FluentIterable
-                .from(
-                    Ranges
-                        .closedOpen(0, 1000)
-                        .asSet(DiscreteDomains.integers())
-                )
-                .transform(new Function<Integer, Vec3>() {
-                    public Vec3 apply(Integer i) {
-                        float elevation = -1 * (float) ((i / 1000.) * Math.PI - (Math.PI / 2));
-                        float azimuth = (float) (2 * Math.PI * (i % 60) / 60.);
-                        return Geometry.azimuthAndElevation(azimuth, elevation, 1);
-                    }
-                })
-                .toImmutableList()
-        );
+        FluentIterable.from(spiral(1000, 16.7f).toImmutableList());
 
     public static FluentIterable<Vec3> samplePointsAroundSphere(final Sphere sphere) {
         return SPIRAL
