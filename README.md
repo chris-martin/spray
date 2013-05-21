@@ -1,6 +1,6 @@
 # Spray
 
-* [Report](http://chris-martin.github.io/spray/spray.pdf)
+* [Paper](http://chris-martin.github.io/spray/spray.pdf)
 
 ### Summary
 
