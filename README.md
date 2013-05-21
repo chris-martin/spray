@@ -1,4 +1,4 @@
-# Spray
+# Spray - 3D sculpting (CS 6491 Computer graphics, Fall 2012)
 
 * [Paper](http://chris-martin.github.io/spray/spray.pdf)
 
