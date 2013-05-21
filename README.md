@@ -8,3 +8,5 @@ This project is virtual environment using a first-person shooter mechanic which 
 a user to sculpt a static three-dimensional shape by adding and removing spheres.
 A triangle mesh is constructed around the spheres to create the appearance of a solid object.
 
+![](doc/mesh.png)
+![](doc/balls.png)
